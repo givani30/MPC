@@ -1,15 +1,15 @@
 # MPC Assignment
 The goal is to simulate the behavior of a car and then implement obstacle detection and avoidance using model predictive control.
 #WAT HEBBEN WE NODIG?
--Hoofd live script voor vicky
--COST FUNCTIE VOOR VERSLAG
--[A,B,C,D] ss(x,u) (discreet voor MPC en continue voor simulatie)
--Adaptive MPC
+- Hoofd live script voor vicky
+- COST FUNCTIE VOOR VERSLAG
+- [A,B,C,D] ss(x,u) (discreet voor MPC en continue voor simulatie)
+- Adaptive MPC
     - Constraints
         -Max steering angle
         -Max throttle
--Obstacle detection -> Constraint generator
--Plotting functie
+- Obstacle detection -> Constraint generator
+- Plotting functie
 
 ## Requirements
 To run this simulation, you will need:
