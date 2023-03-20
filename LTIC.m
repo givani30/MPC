@@ -1,14 +1,8 @@
-function sys = linearSS(eps, u, params)
-    % This function calculates the continuous LTI model of the system
+function eps_dot = LTIC(eps, u, params)
+    % This function evaluates the continous LTI model of the system
     % around the equillibrium point eps and u.
     % The system is defined as:
     % eps_dot = f(eps, u) where eps_dot is the time derivative of the state
-    % vector eps and f is a function of the state vector eps and the input vector u
-    % The system is linearized around the equillibrium point eps and u, which
-    % means that the following equation holds:
-    % eps_dot = A * eps + B * u, where A is the jacobian of f evaluated around
-    % the equillibrium point, B is the jacobian of f evaluated around the
-    % equillibrium point and u is the input vector.
     %
     % Inputs:
     % eps: A 6x1 vector containing the equillibrium point of the system
@@ -50,27 +44,21 @@ function sys = linearSS(eps, u, params)
     b = params(4); % The distance from the center of mass to the rear axle (x axis)
     c = params(5); % The distance from the center of mass to the left/right side of the tires (y axis)
 
-    % Calculate linearization matrices
+    %Direction of tire forces
+    F_x_fl=F_fl*cos(delta);
+    F_y_fl=F_fl*sin(delta);
+    F_x_fr=F_fr*cos(delta);
+    F_y_fr=F_fr*sin(delta);
+    F_x_rl=F_rl;
+    F_y_rl=0;
+    F_x_rr=F_rr;
+    F_y_rr=0;
 
-    lin_x = [0, -psi_dot, -x_dot, 0, 0, 0;
-             psi_dot, 0, y_dot, 0, 0, 0;
-             0, 0, 0, 0, 0, 0;
-             0, 0, 1, 0, 0, 0;
-             cos(psi), -sin(psi), 0, x_dot * cos(psi) + y_dot * (-sin(psi)), 0, 0;
-             -sin(psi), cos(psi), 0, x_dot * (-sin(psi)) - y_dot * cos(psi), 0, 0];
-    A = lin_x;
-    
-    lin_u = [-F_fl * sin(delta) - F_fr * cos(delta) sin(delta) sin(delta) 0 0;
-             F_fl * cos(delta) + F_fr * cos(delta) cos(delta) cos(delta) 1 1;
-             (a * ((F_fl + F_fr) * cos(delta)) + c * ((F_fr - F_fl) * -sin(delta))) / I (a * sin(delta) - c * cos(delta)) / I (a * sin(delta) + c * cos(delta)) / I -1 1;
-             0 0 0 0 0;
-             0 0 0 0 0;
-             0 0 0 0 0];
-    B = lin_u;
-    %Create ss object to store results
-    C = diag(0, 0, 0, 0, 1, 1); %output y is the position of the car in the reference frame
-    sys = ss(A, B, C, []);
-    sys.InputName = {'delta', 'F_fl', 'F_fr', 'F_rl', 'F_rr'};
-    sys.StateName = {'y_dot', 'x_dot', 'psi_dot', 'psi', 'Y', 'X'};
-    sys.OutputName = {'y_dot', 'x_dot', 'psi_dot', 'psi', 'Y', 'X'};
+    %Calculate the derivatives of the states
+    y_ddot=-x_dot*psi_dot+F_y_fl/m+F_y_fr/m+F_y_rl/m+F_y_rr/m;
+    x_ddot=y_dot*psi_dot+F_x_fl/m+F_x_fr/m+F_x_rl/m+F_x_rr/m;
+    psi_ddot=(a*(F_y_fl+F_y_fr)-b*(F_y_rl+F__rr)+c*(-F_x_fl+F_x_fr-F_x_rl+F_x_rr))/I;
+    Y_dot=x_dot*sin(psi)+y_dot*cos(psi);
+    X_dot=x_dot*cos(psi)-y_dot*sin(psi);
+    eps_dot=[y_ddot; x_ddot; psi_ddot; psi_dot; Y_dot; X_dot]
 end
