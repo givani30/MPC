@@ -55,7 +55,7 @@ quadcost=quadprobgen(predmod,weight,dim);
 % 
 f=@(t,x) unidynamics(t,x,discreteinput(x,t,dim,quadcost,param,Uref,Xref),dim);
 % Simulate the system starting close to the reference trajectory
-x=ode1(f,0:1e-5:9,[1+0.3 0-0.2 pi/2-0.2]);   
+x=ode45(f,0:1e-5:9,[1+0.3 0-0.2 pi/2-0.2]);   
 
 
 %% Simulation for the real system with constraints
