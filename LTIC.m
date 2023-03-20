@@ -60,5 +60,5 @@ function eps_dot = LTIC(eps, u, params)
     psi_ddot=(a*(F_y_fl+F_y_fr)-b*(F_y_rl+F__rr)+c*(-F_x_fl+F_x_fr-F_x_rl+F_x_rr))/I;
     Y_dot=x_dot*sin(psi)+y_dot*cos(psi);
     X_dot=x_dot*cos(psi)-y_dot*sin(psi);
-    eps_dot=[y_ddot; x_ddot; psi_ddot; psi_dot; Y_dot; X_dot]
+    eps_dot=[y_ddot; x_ddot; psi_ddot; psi_dot; Y_dot; X_dot];
 end
