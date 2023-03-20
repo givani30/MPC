@@ -69,7 +69,7 @@ function sys = discreteSS(eps, u, params,Ts)
     Bc = lin_u;
     %Create ss object to store results
     [Ad,Bd]=adasblocks_utilDicretizeModel(Ac,Bc,Ts);
-    C = diag(0, 0, 0, 0, 1, 1); %output y is the position of the car in the reference frame
+    C = diag([0, 0, 0, 0, 1, 1]); %output y is the position of the car in the reference frame
     sys = ss(Ad, Bd, C, [],Ts);
     sys.InputName = {'delta', 'F_fl', 'F_fr', 'F_rl', 'F_rr'};
     sys.StateName = {'y_dot', 'x_dot', 'psi_dot', 'psi', 'Y', 'X'};
