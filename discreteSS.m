@@ -1,4 +1,4 @@
-function sys = discreteSS(eps, u, params,Ts)
+function [sys, U,Y,X,DX] = discreteSS(eps, u, params,Ts)
     % This function calculates the discrete LTI model of the system
     % around the equillibrium point eps and u.
     % The system is defined as:
@@ -69,9 +69,15 @@ function sys = discreteSS(eps, u, params,Ts)
     Bc = lin_u;
     %Create ss object to store results
     [Ad,Bd]=adasblocks_utilDicretizeModel(Ac,Bc,Ts);
-    C = diag([0, 0, 0, 0, 1, 1]); %output y is the position of the car in the reference frame
-    sys = ss(Ad, Bd, C, [],Ts);
+%     C = diag([0, 0, 0, 0, 1, 1]); %output y is the position of the car in the reference frame
+    C=eye(6);
+sys = ss(Ad, Bd, C, [],Ts);
     sys.InputName = {'delta', 'F_fl', 'F_fr', 'F_rl', 'F_rr'};
     sys.StateName = {'y_dot', 'x_dot', 'psi_dot', 'psi', 'Y', 'X'};
     sys.OutputName = {'y_dot', 'x_dot', 'psi_dot', 'psi', 'Y', 'X'};
+    
+    U=u;
+    Y=C*eps;
+    X=eps;
+    DX=Ad*eps+Bd*u-eps;
 end

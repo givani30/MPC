@@ -16,7 +16,7 @@ parameters=[m;I;a;b;c];
 % & F_{r,r} \end{array}\right\rbrack$$
 V=50/3.6
 eps_0=[0;
-    V;
+    0.5*V;
     0;
     0;
     0;
@@ -27,7 +27,7 @@ eps_0=[0;
 %Sampling time of T_s=0.05
 Ts=5e-2;
 u_0=zeros(5,1);
-dsys=minreal(discreteSS(eps_0,u_0,parameters,Ts));
+[dsys,U,Y,X,DX]=(discreteSS(eps_0,u_0,parameters,Ts));
 mpcobj=mpc(dsys)
 %% 
 % STEPS:
@@ -51,11 +51,12 @@ mpcobj.ManipulatedVariables(4).RateMin=-0.5*Ts; %Min throttle rate of change
 mpcobj.ManipulatedVariables(5).RateMin=-0.5*Ts; %Min throttle rate of change
 
 % #Constraint on turing radius of car
-mpcobj.ManipulatedVariables(1).Max=atan(2.5/5); %Max steering angle
-mpcobj.ManipulatedVariables(1).Min=-atan(2.5/5); %Min steering angle
+max_angle=0.4*pi %Max steering angle
+mpcobj.ManipulatedVariables(1).Max=max_angle; %Max steering angle
+mpcobj.ManipulatedVariables(1).Min=-max_angle; %Min steering angle
 
 % Constraint on throttle
-maxT=100
+maxT=100;
 mpcobj.ManipulatedVariables(2).Max=maxT; %Max throttle [N*m]
 mpcobj.ManipulatedVariables(3).Max=maxT; %Max throttle [N*m]
 mpcobj.ManipulatedVariables(4).Max=maxT; %Max throttle [N*m]
@@ -65,49 +66,109 @@ mpcobj.ManipulatedVariables(2).Min=-maxT; %Min throttle (brake) [N*m]
 mpcobj.ManipulatedVariables(3).Min=-maxT; %Min throttle (brake) [N*m]
 mpcobj.ManipulatedVariables(4).Min=-maxT; %Min throttle (brake) [N*m]
 mpcobj.ManipulatedVariables(5).Min=-maxT; %Min throttle (brake) [N*m]
+
+%TODO scale MV
+mpcobj.ManipulatedVariables(2).ScaleFactor=maxT; %Scale throttle
+mpcobj.ManipulatedVariables(3).ScaleFactor=maxT; %Scale throttle
+mpcobj.ManipulatedVariables(4).ScaleFactor=maxT; %Scale throttle
+mpcobj.ManipulatedVariables(5).ScaleFactor=maxT; %Scale throttle
+
+mpcobj.ManipulatedVariables(1).ScaleFactor=max_angle; %Scale steering angle
 %% 
 % # Scale the MV NIET NODIG?
 % # Weights on output vars
-mpcobj.Weights.OutputVariables=[1 1 1 0 1 0]; %Weight on x_dot,y_dot,psi and y
+mpcobj.Weights.OutputVariables=[0 5 0 1 30 0]; %Weight on x_dot,y_dot,psi and y
 % # Nominal operating point
-mpcobj.Model.Nominal.X=eps_0;
-mpcobj.Model.Nominal.U=u_0;
-mpcobj.Model.Nominal.DX=dsys.A*eps_0+dsys.B*u_0-eps_0;
-mpcobj.Model.Nominal.Y=dsys.C*eps_0+dsys.D*u_0;
+mpcobj.Model.Nominal.X=X;
+mpcobj.Model.Nominal.U=U;
+mpcobj.Model.Nominal.DX=DX;
+mpcobj.Model.Nominal.Y=Y;
 %%
 % # Define the constraints on the output variables
 %Type of constraints: E*u+F*y<=G
-E1=[0 0 0 0 0];
-F1=[0 0 0 0 1 0];
 lanewidth=3.5;
 lanes=3;
-G1=lanewidth*lanes/2;
-% 
-E2=[0 0 0 0 0];
-F2=[0 0 0 0 -1 0];
-G2=lanewidth*lanes/2;
-%
-E3=[0 0 0 0 0];
-F3=[0 0 0 0 1 0];
-G3=lanewidth*lanes/2;
-%
-setconstraint(mpcobj, [E1;E2;E3], [F1;F2;F3], [G1;G2;G3],[1;1;0.1]);
+
+[E,F,G]=baseConstraints(lanewidth,lanes);
+setconstraint(mpcobj, E,F,G,[1;1;0.1]);
 
 %Simulate the system
 refSpeed=[0;V;0;0;0;0];
 
+%Initial conditions
 x=eps_0;
 u=u_0;
 
-egostates=mpcstate(mpcobj)
+egostates=mpcstate(mpcobj);
 
-T=0:Ts:10;
+T=0:Ts:30;
 
+%Vars to store simulation data
+states=zeros(length(x),length(T));
+inputs=zeros(length(u),length(T));
+
+%Simulate the system
 for i=1:length(T)
-    [u,~,egostates]=mpcmove(mpcobj,refSpeed,[],[],egostates);
+    %Update plant states
+    [newsys,U,Y,X,DX]=(discreteSS(x,u,parameters,Ts));
+    %Detection logic
+%     if ObstacleDetected(x,obstacle):
+%         [E,F,G]=updateConstraints(x,obstacle);
+%     else:
+%         [E,F,G]=baseConstraints()
+%     end
+        
+    %Update constraints
+    %Update nominal operating point
+    newNominal=struct('X',X,'U',U,'DX',DX,'Y',Y);
+
+    opt=mpcmoveopt;
+    %ADD updated constraints here
+    opt.CustomConstraint=struct('E',E,'F',F,'G',G);
+    refSpeed=[0;V;0;0;100*sin(T(i));0];
+
+    %Get the optimal control action
+    [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, [], refSpeed, [],opt);
+    %Time update of the system
     x=dsys.A*x+dsys.B*u;
-    y=dsys.C*x+dsys.D*u;
-    X(i,:)=x';
-    Y(i,:)=y';
-    U(i,:)=u';
+    %Save the results
+    states(:,i)=x;
+    inputs(:,i)=u;
 end
+% %Simulate the system
+% for i=1:length(T)
+    
+%     %Get the optimal control action
+%     [u]=mpcmove(mpcobj,egostates);
+%     %Simulate the system
+%     x=dsys.A*x+dsys.B*u;
+%     %Save the results
+%     states(:,i)=x;
+%     inputs(:,i)=u;
+% end
+%% 
+% Plot results
+figure
+plot(states(6,:),states(5,:))
+ylabel('Y')
+xlabel('X')
+title('Position')
+figure
+subplot(2,1,1)
+plot(T,states(1,:))
+ylabel('y__dot')
+subplot(2,1,2)
+plot(T,states(2,:))
+ylabel('x__dot')
+xlabel('Time (s)')
+%% 
+% Plot input
+
+figure
+subplot(2,1,1)
+plot(T,inputs(1,:))
+ylabel('\delta')
+subplot(2,1,2)
+plot(T,inputs(2,:))
+ylabel('F_{f,l}')
+xlabel('Time (s)')
