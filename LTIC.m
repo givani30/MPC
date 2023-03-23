@@ -57,7 +57,7 @@ function eps_dot = LTIC(eps, u, params)
     %Calculate the derivatives of the states
     y_ddot=-x_dot*psi_dot+F_y_fl/m+F_y_fr/m+F_y_rl/m+F_y_rr/m;
     x_ddot=y_dot*psi_dot+F_x_fl/m+F_x_fr/m+F_x_rl/m+F_x_rr/m;
-    psi_ddot=(a*(F_y_fl+F_y_fr)-b*(F_y_rl+F__rr)+c*(-F_x_fl+F_x_fr-F_x_rl+F_x_rr))/I;
+    psi_ddot=(a*(F_y_fl+F_y_fr)-b*(F_y_rl+F_y_rr)+c*(-F_x_fl+F_x_fr-F_x_rl+F_x_rr))/I;
     Y_dot=x_dot*sin(psi)+y_dot*cos(psi);
     X_dot=x_dot*cos(psi)-y_dot*sin(psi);
     eps_dot=[y_ddot; x_ddot; psi_ddot; psi_dot; Y_dot; X_dot];

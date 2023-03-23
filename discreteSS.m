@@ -56,13 +56,13 @@ function [sys, U,Y,X,DX] = discreteSS(eps, u, params,Ts)
              psi_dot, 0, y_dot, 0, 0, 0;
              0, 0, 0, 0, 0, 0;
              0, 0, 1, 0, 0, 0;
-             cos(psi), -sin(psi), 0, x_dot * cos(psi) + y_dot * (-sin(psi)), 0, 0;
+             cos(psi), sin(psi), 0, x_dot * cos(psi) + y_dot * (-sin(psi)), 0, 0;
              -sin(psi), cos(psi), 0, x_dot * (-sin(psi)) - y_dot * cos(psi), 0, 0];
     Ac = lin_x;
     
-    lin_u = [-F_fl * sin(delta) - F_fr * cos(delta) sin(delta) sin(delta) 0 0;
-             F_fl * cos(delta) + F_fr * cos(delta) cos(delta) cos(delta) 1 1;
-             (a * ((F_fl + F_fr) * cos(delta)) + c * ((F_fr - F_fl) * -sin(delta))) / I (a * sin(delta) - c * cos(delta)) / I (a * sin(delta) + c * cos(delta)) / I -1 1;
+    lin_u = [(F_fl * cos(delta) + F_fr * cos(delta))/m sin(delta)/m sin(delta)/m 0 0;
+             (-F_fl * sin(delta) - F_fr * sin(delta))/m cos(delta)/m cos(delta)/m 1/m 1/m;
+             (a * ((F_fl + F_fr) * cos(delta)) + c * ((F_fr - F_fl) * -sin(delta))) / I (a * sin(delta) - c * cos(delta)) / I (a * sin(delta) + c * cos(delta)) / I -c/I c/I;
              0 0 0 0 0;
              0 0 0 0 0;
              0 0 0 0 0];

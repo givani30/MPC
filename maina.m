@@ -51,7 +51,9 @@ mpcobj.ManipulatedVariables(4).RateMin=-0.5*Ts; %Min throttle rate of change
 mpcobj.ManipulatedVariables(5).RateMin=-0.5*Ts; %Min throttle rate of change
 
 % #Constraint on turing radius of car
-max_angle=0.4*pi %Max steering angle
+max_angle=0.4*pi; %Max steering angle
+mpcobj.MV(1).RateMax=0.5*Ts;
+mpcobj.MV(1).RateMax=0.5*Ts;
 mpcobj.ManipulatedVariables(1).Max=max_angle; %Max steering angle
 mpcobj.ManipulatedVariables(1).Min=-max_angle; %Min steering angle
 
@@ -75,9 +77,9 @@ mpcobj.ManipulatedVariables(5).ScaleFactor=maxT; %Scale throttle
 
 mpcobj.ManipulatedVariables(1).ScaleFactor=max_angle; %Scale steering angle
 %% 
-% # Scale the MV NIET NODIG?
+
 % # Weights on output vars
-mpcobj.Weights.OutputVariables=[0 5 0 1 30 0]; %Weight on x_dot,y_dot,psi and y
+mpcobj.Weights.OutputVariables=[0 5 0 0 0 0]; %Weight on x_dot,y_dot,psi and y
 % # Nominal operating point
 mpcobj.Model.Nominal.X=X;
 mpcobj.Model.Nominal.U=U;
@@ -88,7 +90,8 @@ mpcobj.Model.Nominal.Y=Y;
 %Type of constraints: E*u+F*y<=G
 lanewidth=3.5;
 lanes=3;
-
+%Create obstacle
+obstacle=createObstacle(lanewidth);
 [E,F,G]=baseConstraints(lanewidth,lanes);
 setconstraint(mpcobj, E,F,G,[1;1;0.1]);
 
@@ -124,8 +127,9 @@ for i=1:length(T)
 
     opt=mpcmoveopt;
     %ADD updated constraints here
+    detect=ObstacleDetect(x,obstacle);
+    [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
-    refSpeed=[0;V;0;0;100*sin(T(i));0];
 
     %Get the optimal control action
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, [], refSpeed, [],opt);
