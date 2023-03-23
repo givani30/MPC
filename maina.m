@@ -1,6 +1,6 @@
 %% 
 % Define system params
-
+close all
 m= 1000; %kg, mass of the vehicle
 I=1000; %kgm^2, moment of inertia of the vehicle
 a=1.5; %m, distance from the center of mass to the front axle
@@ -14,7 +14,7 @@ parameters=[m;I;a;b;c];
 % 
 % $$u=\left\lbrack \begin{array}{ccccc}\delta  & F_{f,l}  & F_{f,r}  & F_{r,l}  
 % & F_{r,r} \end{array}\right\rbrack$$
-V=50/3.6
+V=20/3.6;
 eps_0=[0;
     0.5*V;
     0;
@@ -40,20 +40,20 @@ mpcobj.ControlHorizon=4 %0.1 Sec
 % # Constraints on Control (Max Throttle, Max throttle rate of change. Max steering 
 % angle,)
 
-mpcobj.ManipulatedVariables(2).RateMax=0.5*Ts; %Max throttle rate of change
-mpcobj.ManipulatedVariables(3).RateMax=0.5*Ts; %Max throttle rate of change
-mpcobj.ManipulatedVariables(4).RateMax=0.5*Ts; %Max throttle rate of change
+mpcobj.ManipulatedVariables(2).RateMax=5*Ts; %Max throttle rate of change
+mpcobj.ManipulatedVariables(3).RateMax=5*Ts; %Max throttle rate of change
+mpcobj.ManipulatedVariables(4).RateMax=5*Ts; %Max throttle rate of change
 mpcobj.ManipulatedVariables(5).RateMax=0.5*Ts; %Max throttle rate of change
 
-mpcobj.ManipulatedVariables(2).RateMin=-0.5*Ts; %Min throttle rate of change
-mpcobj.ManipulatedVariables(3).RateMin=-0.5*Ts; %Min throttle rate of change
-mpcobj.ManipulatedVariables(4).RateMin=-0.5*Ts; %Min throttle rate of change
-mpcobj.ManipulatedVariables(5).RateMin=-0.5*Ts; %Min throttle rate of change
+mpcobj.ManipulatedVariables(2).RateMin=-5*Ts; %Min throttle rate of change
+mpcobj.ManipulatedVariables(3).RateMin=-5*Ts; %Min throttle rate of change
+mpcobj.ManipulatedVariables(4).RateMin=-5*Ts; %Min throttle rate of change
+mpcobj.ManipulatedVariables(5).RateMin=-5*Ts; %Min throttle rate of change
 
 % #Constraint on turing radius of car
 max_angle=0.4*pi; %Max steering angle
-mpcobj.MV(1).RateMax=0.5*Ts;
-mpcobj.MV(1).RateMax=0.5*Ts;
+mpcobj.MV(1).RateMax=0.4*Ts;
+mpcobj.MV(1).RateMax=0.4*Ts;
 mpcobj.ManipulatedVariables(1).Max=max_angle; %Max steering angle
 mpcobj.ManipulatedVariables(1).Min=-max_angle; %Min steering angle
 
@@ -79,7 +79,7 @@ mpcobj.ManipulatedVariables(1).ScaleFactor=max_angle; %Scale steering angle
 %% 
 
 % # Weights on output vars
-mpcobj.Weights.OutputVariables=[0 5 0 0 0 0]; %Weight on x_dot,y_dot,psi and y
+mpcobj.Weights.OutputVariables=[0 5 0 0 300 0]; %Weight on x_dot,y_dot,psi and y
 % # Nominal operating point
 mpcobj.Model.Nominal.X=X;
 mpcobj.Model.Nominal.U=U;
@@ -96,7 +96,7 @@ obstacle=createObstacle(lanewidth);
 setconstraint(mpcobj, E,F,G,[1;1;0.1]);
 
 %Simulate the system
-refSpeed=[0;V;0;0;0;0];
+refSpeed=[0;V;0;0;2.5;0];
 
 %Initial conditions
 x=eps_0;
@@ -104,13 +104,13 @@ u=u_0;
 
 egostates=mpcstate(mpcobj);
 
-T=0:Ts:30;
+T=0:Ts:50;
 
 %Vars to store simulation data
 states=zeros(length(x),length(T));
 inputs=zeros(length(u),length(T));
 
-%Simulate the system
+% Simulate the system
 for i=1:length(T)
     %Update plant states
     [newsys,U,Y,X,DX]=(discreteSS(x,u,parameters,Ts));
@@ -134,18 +134,18 @@ for i=1:length(T)
     %Get the optimal control action
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, [], refSpeed, [],opt);
     %Time update of the system
-    x=dsys.A*x+dsys.B*u;
+    x=x+Ts*LTIC(x,u,parameters);
     %Save the results
     states(:,i)=x;
     inputs(:,i)=u;
 end
-% %Simulate the system
+% % %Simulate the system
 % for i=1:length(T)
-    
+%     
 %     %Get the optimal control action
-%     [u]=mpcmove(mpcobj,egostates);
+%     [u]=mpcmove(mpcobj,egostates,[],refSpeed);
 %     %Simulate the system
-%     x=dsys.A*x+dsys.B*u;
+% 
 %     %Save the results
 %     states(:,i)=x;
 %     inputs(:,i)=u;
@@ -153,10 +153,20 @@ end
 %% 
 % Plot results
 figure
+hold on
 plot(states(6,:),states(5,:))
+
+% Define obstacle vertices
+obstacle_vertices = [obstacle.fl; obstacle.fr; obstacle.rr; obstacle.rl];
+
+% Plot obstacle
+patch('Faces', [1 2 3 4], 'Vertices', obstacle_vertices, 'FaceColor', 'red')
+
+
 ylabel('Y')
-xlabel('X')
+xlabel('X') 
 title('Position')
+hold off
 figure
 subplot(2,1,1)
 plot(T,states(1,:))
