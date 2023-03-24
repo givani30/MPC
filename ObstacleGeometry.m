@@ -24,7 +24,7 @@ obstacle.frSafeY = obstacle.frY-obstacle.safeDistanceY;
 obstacle.rlSafeX = obstacle.rlX-obstacle.safeDistanceX; 
 obstacle.rlSafeY = obstacle.flSafeY;
 % Rear right
-obstacle.rrSafeX = obstacle.X-obstacle.safeDistanceX;
+obstacle.rrSafeX = obstacle.rrX-obstacle.safeDistanceX;
 obstacle.rrSafeY = obstacle.frSafeY;
 
 end

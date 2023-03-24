@@ -91,7 +91,7 @@ mpcobj.Model.Nominal.Y=Y;
 lanewidth=3.5;
 lanes=3;
 %Create obstacle
-obstacle=createObstacle(lanewidth);
+obstacle=createObstacle();
 [E,F,G]=baseConstraints(lanewidth,lanes);
 setconstraint(mpcobj, E,F,G,[1;1;0.1]);
 
@@ -104,7 +104,7 @@ u=u_0;
 
 egostates=mpcstate(mpcobj);
 
-T=0:Ts:50;
+T=0:Ts:30;
 
 %Vars to store simulation data
 states=zeros(length(x),length(T));
@@ -155,18 +155,20 @@ end
 figure
 hold on
 plot(states(6,:),states(5,:))
-
-% Define obstacle vertices
-obstacle_vertices = [obstacle.fl; obstacle.fr; obstacle.rr; obstacle.rl];
-
-% Plot obstacle
-patch('Faces', [1 2 3 4], 'Vertices', obstacle_vertices, 'FaceColor', 'red')
-
-
+% 
+% % Define obstacle vertices
+% obstacle_vertices = [obstacle.fl; obstacle.fr; obstacle.rr; obstacle.rl];
+% 
+% % Plot obstacle
+% rectangle('Faces', [1 2 3 4], 'Vertices', obstacle_vertices, 'FaceColor', 'red')
+rectangle(Position=[obstacle.rrX,obstacle.rrY,obstacle.Length,obstacle.Width])
+rectangle('Position',[obstacle.rrSafeX,obstacle.rrSafeY,obstacle.Length+2*obstacle.safeDistanceX,obstacle.Width+2*obstacle.safeDistanceY],'LineStyle','--')
+xlim([0 100])
 ylabel('Y')
 xlabel('X') 
 title('Position')
 hold off
+%%
 figure
 subplot(2,1,1)
 plot(T,states(1,:))
