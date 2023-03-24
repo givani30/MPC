@@ -14,7 +14,7 @@ else
         slope=(obstacle.rlSafeY-Y)/(obstacle.rlSafeX-X);
         intercept=Y;
    else
-       slope=(Y-obstacle.flSafeY)/(obstacle.flSafeX-X);
+       slope=(-Y+obstacle.flSafeY)/(obstacle.flSafeX-X);
        intercept=Y;
    end
    [E,F,G]=baseConstraints(lanes,lanes);

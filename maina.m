@@ -2,7 +2,7 @@
 % Define system params
 close all
 m= 1000; %kg, mass of the vehicle
-I=1000; %kgm^2, moment of inertia of the vehicle
+I=1500; %kgm^2, moment of inertia of the vehicle
 a=1.5; %m, distance from the center of mass to the front axle
 b=1.5; %m, distance from the center of mass to the rear axle
 c=1; % The distance from the center of mass to the left/right side of the tires (y axis)
@@ -19,7 +19,7 @@ eps_0=[0;
     0.5*V;
     0;
     0;
-    0;
+    2.5;
     0];
 %% 
 % MPC
@@ -43,7 +43,7 @@ mpcobj.ControlHorizon=4 %0.1 Sec
 mpcobj.ManipulatedVariables(2).RateMax=5*Ts; %Max throttle rate of change
 mpcobj.ManipulatedVariables(3).RateMax=5*Ts; %Max throttle rate of change
 mpcobj.ManipulatedVariables(4).RateMax=5*Ts; %Max throttle rate of change
-mpcobj.ManipulatedVariables(5).RateMax=0.5*Ts; %Max throttle rate of change
+mpcobj.ManipulatedVariables(5).RateMax=5*Ts; %Max throttle rate of change
 
 mpcobj.ManipulatedVariables(2).RateMin=-5*Ts; %Min throttle rate of change
 mpcobj.ManipulatedVariables(3).RateMin=-5*Ts; %Min throttle rate of change
@@ -51,14 +51,14 @@ mpcobj.ManipulatedVariables(4).RateMin=-5*Ts; %Min throttle rate of change
 mpcobj.ManipulatedVariables(5).RateMin=-5*Ts; %Min throttle rate of change
 
 % #Constraint on turing radius of car
-max_angle=0.4*pi; %Max steering angle
-mpcobj.MV(1).RateMax=0.4*Ts;
-mpcobj.MV(1).RateMax=0.4*Ts;
+max_angle=0.5; %Max steering angle
+mpcobj.MV(1).RateMax=pi/30*Ts;
+mpcobj.MV(1).RateMin=-pi/30*Ts;
 mpcobj.ManipulatedVariables(1).Max=max_angle; %Max steering angle
 mpcobj.ManipulatedVariables(1).Min=-max_angle; %Min steering angle
 
 % Constraint on throttle
-maxT=100;
+maxT=250;
 mpcobj.ManipulatedVariables(2).Max=maxT; %Max throttle [N*m]
 mpcobj.ManipulatedVariables(3).Max=maxT; %Max throttle [N*m]
 mpcobj.ManipulatedVariables(4).Max=maxT; %Max throttle [N*m]
@@ -96,7 +96,7 @@ obstacle=createObstacle();
 setconstraint(mpcobj, E,F,G,[1;1;0.1]);
 
 %Simulate the system
-refSpeed=[0;V;0;0;2.5;0];
+refSpeed=[0;V;0;0;0;1000];
 
 %Initial conditions
 x=eps_0;
@@ -109,7 +109,7 @@ T=0:Ts:30;
 %Vars to store simulation data
 states=zeros(length(x),length(T));
 inputs=zeros(length(u),length(T));
-
+detected=zeros(length(T));
 % Simulate the system
 for i=1:length(T)
     %Update plant states
@@ -128,6 +128,8 @@ for i=1:length(T)
     opt=mpcmoveopt;
     %ADD updated constraints here
     detect=ObstacleDetect(x,obstacle);
+    detected(i)=detect;
+%     detect=false;
     [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
 
@@ -135,6 +137,7 @@ for i=1:length(T)
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, [], refSpeed, [],opt);
     %Time update of the system
     x=x+Ts*LTIC(x,u,parameters);
+%     x=newsys.A*x+newsys.B*u;
     %Save the results
     states(:,i)=x;
     inputs(:,i)=u;
@@ -163,7 +166,9 @@ plot(states(6,:),states(5,:))
 % rectangle('Faces', [1 2 3 4], 'Vertices', obstacle_vertices, 'FaceColor', 'red')
 rectangle(Position=[obstacle.rrX,obstacle.rrY,obstacle.Length,obstacle.Width])
 rectangle('Position',[obstacle.rrSafeX,obstacle.rrSafeY,obstacle.Length+2*obstacle.safeDistanceX,obstacle.Width+2*obstacle.safeDistanceY],'LineStyle','--')
-xlim([0 100])
+yline(lanewidth/2,'b--')
+yline(-lanewidth/2,'b--')
+% xlim([0 100])
 ylabel('Y')
 xlabel('X') 
 title('Position')
