@@ -15,13 +15,13 @@ obstacle.rrY = obstacle.frY;
 
 %Safe zone:
 % Front left
-obstacle.flSafeX = obstacle.X+obstacle.safeDistanceX; 
-obstacle.flSafeY = obstacle.Y+obstacle.safeDistanceY;
+obstacle.flSafeX = obstacle.flX+obstacle.safeDistanceX; 
+obstacle.flSafeY = obstacle.flY+obstacle.safeDistanceY;
 % Front right
-obstacle.frSafeX = obstacle.X+obstacle.safeDistanceX;
-obstacle.frSafeY = obstacle.Y-obstacle.safeDistanceY;
-% Rear left
-obstacle.rlSafeX = obstacle.X-obstacle.safeDistanceX; 
+obstacle.frSafeX = obstacle.frX+obstacle.safeDistanceX;
+obstacle.frSafeY = obstacle.frY-obstacle.safeDistanceY;
+% Rear le
+obstacle.rlSafeX = obstacle.rlX-obstacle.safeDistanceX; 
 obstacle.rlSafeY = obstacle.flSafeY;
 % Rear right
 obstacle.rrSafeX = obstacle.X-obstacle.safeDistanceX;
