@@ -16,7 +16,7 @@ parameters=[m;I;a;b;c];
 % 
 % $$u=\left\lbrack \begin{array}{ccccc}\delta  & F_{f,l}  & F_{f,r}  & F_{r,l}  
 % & F_{r,r} \end{array}\right\rbrack$$
-V=20/3.6;
+V=20;
 eps_0=[0;
     0.5*V;
     0;
@@ -37,11 +37,12 @@ mpcobj=mpc(dsys);
 % # Define prediction horizon
 
 mpcobj.PredictionHorizon = 2/Ts %2 sec
-mpcobj.ControlHorizon=5 %0.1 Sec
+mpcobj.ControlHorizon= 5%0.1 Sec
 %% 
 % # Constraints on Control (Max Throttle, Max throttle rate of change. Max steering 
 % angle,)
 
+<<<<<<< Updated upstream
 mpcobj.ManipulatedVariables(2).RateMax=5*Ts; %Max throttle rate of change
 mpcobj.ManipulatedVariables(3).RateMax=5*Ts; %Max throttle rate of change
 mpcobj.ManipulatedVariables(4).RateMax=5*Ts; %Max throttle rate of change
@@ -51,13 +52,20 @@ mpcobj.ManipulatedVariables(2).RateMin=-5*Ts; %Min throttle rate of change
 mpcobj.ManipulatedVariables(3).RateMin=-5*Ts; %Min throttle rate of change
 mpcobj.ManipulatedVariables(4).RateMin=-5*Ts; %Min throttle rate of change
 mpcobj.ManipulatedVariables(5).RateMin=-5*Ts; %Min throttle rate of change
+=======
+% mpcobj.ManipulatedVariables(2).RateMax=5*Ts; %Max throttle rate of change
+% mpcobj.ManipulatedVariables(3).RateMax=5*Ts; %Max throttle rate of change
+% 
+% mpcobj.ManipulatedVariables(2).RateMin=-5*Ts; %Min throttle rate of change
+% mpcobj.ManipulatedVariables(3).RateMin=-5*Ts; %Min throttle rate of change
+>>>>>>> Stashed changes
 
 % #Constraint on turing radius of car
 max_angle=1.5; %Max steering angle
 % mpcobj.MV(1).RateMax=pi/30*Ts;
 % mpcobj.MV(1).RateMin=-pi/30*Ts;
-mpcobj.ManipulatedVariables(1).Max=max_angle; %Max steering angle
-mpcobj.ManipulatedVariables(1).Min=-max_angle; %Min steering angle
+% mpcobj.ManipulatedVariables(1).Max=max_angle; %Max steering angle
+% mpcobj.ManipulatedVariables(1).Min=-max_angle; %Min steering angle
 
 % Constraint on throttle
 maxT=2500;
@@ -83,7 +91,11 @@ mpcobj.ManipulatedVariables(1).ScaleFactor=max_angle; %Scale steering angle
 %% 
 
 % # Weights on output vars
+<<<<<<< Updated upstream
 mpcobj.Weights.OutputVariables=[1e3 10 1e5 1e2]; %Weight on x_dot,y_dot,psi and y
+=======
+mpcobj.Weights.OutputVariables=[0 5 300 0]; %Weight on x_dot,y_dot,psi and y
+>>>>>>> Stashed changes
 % # Nominal operating point
 mpcobj.Model.Nominal.X=X;
 mpcobj.Model.Nominal.U=U;
@@ -96,15 +108,34 @@ lanewidth=3.5;
 lanes=3;
 %Create obstacle
 obstacle=createObstacle();
-[E,F,G]=baseConstraints(lanewidth,lanes);
-setconstraint(mpcobj, E,F,G,[0.1;0.1;0.01]);
+%[E,F,G]=updateConstraints(eps,obstacle,detection,lanewidth,lanes);
+E1=[0 0 0];
+F1=[0 0 1 0];
+
+G1=lanewidth*lanes/2;
+% 
+E2=[0 0 0];
+F2=[0 0 -1 0];
+G2=lanewidth*lanes/2;
+%
+E3=[0 0 0];
+F3=[0 0 1 0];
+G3=lanewidth*lanes/2;
+E=[E1;E2;E3];
+F=[F1;F2;F3];
+G=[G1;G2;G3];
+setconstraint(mpcobj, E,F,G,[1;1;0.1]);
 
 % %Terminal constraint
 % Y_term=struct('Weight',[0 5 0 0 30 0],'Min',[-10 -10 -10 -10 -lanes*lanewidth/2 0],'Max',[10 10 10 10 lanes*lanewidth/2 inf]);
 % U_term=struct('Max',[max_angle maxT maxT maxT maxT]);
 % setterminal(mpcobj,Y_term,U_term,mpcobj.PredictionHorizon)
 % %Simulate the system
+<<<<<<< Updated upstream
 refSpeed=[V;0;0;0];
+=======
+refSpeed=[V;0;0;1];
+>>>>>>> Stashed changes
 
 %Initial conditions
 x=eps_0;
@@ -118,6 +149,12 @@ T=0:Ts:50;
 states=zeros(length(x),length(T));
 inputs=zeros(length(u),length(T));
 detected=zeros(1,length(T));
+
+saveSlope = zeros(length(T),1);
+saveIntercept = zeros(length(T),1);
+ympc = zeros(length(T),size(dsys.C,1));
+umpc = zeros(length(T),size(dsys.B,2));
+opt=mpcmoveopt;
 % Simulate the system
 for i=1:length(T)
     %Update plant states
@@ -133,15 +170,20 @@ for i=1:length(T)
     %Update nominal operating point
     newNominal=struct('X',X,'U',U,'DX',DX,'Y',Y);
     measurements=newsys.C*x+newsys.D*u;
-    opt=mpcmoveopt;
+    ympc(i,:) = measurements';
+   
     %ADD updated constraints here
-%     detect=ObstacleDetect(x,obstacle);
-%     detected(i)=detect;
-    detect=false;
-    [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
+    detection=ObstacleDetect(x,obstacle);
+    detected(i)=detection;
+   % detect=false;
+    [E,F,G,saveSlope(i),saveIntercept(i)]=updateConstraints(x,obstacle,detection,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
 %Update ref speed
+<<<<<<< Updated upstream
     refspeed=[V 0 0 x(6)+4];
+=======
+    refspeed=[V 0 0 0];
+>>>>>>> Stashed changes
     %Get the optimal control action
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
     %Time update of the system
@@ -150,6 +192,7 @@ for i=1:length(T)
     %Save the results
     states(:,i)=x;
     inputs(:,i)=u;
+    umpc(i,:)= u';
 end
 % % %Simulate the system
 % for i=1:length(T)
@@ -204,3 +247,13 @@ subplot(2,1,2)
 plot(T,inputs(2,:))
 ylabel('F_{f,l}')
 xlabel('Time (s)')
+%%
+figure 
+
+for i = 1:length(saveSlope)
+    X = [0;50;100];
+    Y = saveSlope(i)*X + saveIntercept(i);
+    line(X,Y,'LineStyle','--','Color','g' )
+end    
+plot(ympc(:,4),ympc(:,3),'-k');
+axis([0 ympc(end,1) -lanewidth*lanes/2 lanewidth*lanes/2]) % reset axis

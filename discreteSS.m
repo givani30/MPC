@@ -67,6 +67,7 @@ function [sys, U,Y,X,DX] = discreteSS(eps, u, params,Ts)
              0 0 0 0 0;
              0 0 0 0 0];
     Bc = lin_u;
+<<<<<<< Updated upstream
     %Create ss object to store results
     [Ad,Bd]=adasblocks_utilDicretizeModel(Ac,Bc,Ts);
 %     C = diag([0, 0, 0, 0, 1, 1]); %output y is the position of the car in the reference frame
@@ -76,11 +77,26 @@ function [sys, U,Y,X,DX] = discreteSS(eps, u, params,Ts)
         0 0 0 0 0 1];
 sys = ss(Ad, Bd, C, [],Ts);
     sys.InputName = {'delta', 'F_fl', 'F_fr', 'F_rl', 'F_rr'};
+=======
+    C=[sin(psi) cos(psi) 0 0 0 0;
+        0 0 0 1 0 0;
+        0 0 0 0 1 0;
+        0 0 0 0 0 1];
+    D = []
+    %Create ss object to store results
+    csys=ss(Ac,Bc,C,D);
+    sys=c2d(csys, Ts,'zoh');
+
+%     C = diag([0, 0, 0, 0, 1, 1]); %output y is the position of the car in the reference frame
+
+% sys = ss(Ad, Bd, C, [],Ts);
+    sys.InputName = {'delta', 'F_f', 'F_r'};
+>>>>>>> Stashed changes
     sys.StateName = {'y_dot', 'x_dot', 'psi_dot', 'psi', 'Y', 'X'};
     sys.OutputName = {'x_dot', 'psi', 'Y', 'X'};
     
     U=u;
-    Y=C*eps;
+    Y=sys.C*eps;
     X=eps;
-    DX=Ad*eps+Bd*u-eps;
+    DX=sys.A*eps+sys.B*u-eps;
 end
