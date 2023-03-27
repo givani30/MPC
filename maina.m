@@ -19,7 +19,7 @@ eps_0=[0;
     0.5*V;
     0;
     0;
-    2.5;
+    2;
     0];
 %% 
 % MPC
@@ -35,7 +35,7 @@ mpcobj=mpc(dsys)
 % # Define prediction horizon
 
 mpcobj.PredictionHorizon = 2/Ts %2 sec
-mpcobj.ControlHorizon=4 %0.1 Sec
+mpcobj.ControlHorizon=10 %0.1 Sec
 %% 
 % # Constraints on Control (Max Throttle, Max throttle rate of change. Max steering 
 % angle,)
@@ -70,10 +70,10 @@ mpcobj.ManipulatedVariables(4).Min=-maxT; %Min throttle (brake) [N*m]
 mpcobj.ManipulatedVariables(5).Min=-maxT; %Min throttle (brake) [N*m]
 
 %TODO scale MV
-mpcobj.ManipulatedVariables(2).ScaleFactor=maxT; %Scale throttle
-mpcobj.ManipulatedVariables(3).ScaleFactor=maxT; %Scale throttle
-mpcobj.ManipulatedVariables(4).ScaleFactor=maxT; %Scale throttle
-mpcobj.ManipulatedVariables(5).ScaleFactor=maxT; %Scale throttle
+% mpcobj.ManipulatedVariables(2).ScaleFactor=maxT; %Scale throttle
+% mpcobj.ManipulatedVariables(3).ScaleFactor=maxT; %Scale throttle
+% mpcobj.ManipulatedVariables(4).ScaleFactor=maxT; %Scale throttle
+% mpcobj.ManipulatedVariables(5).ScaleFactor=maxT; %Scale throttle
 
 mpcobj.ManipulatedVariables(1).ScaleFactor=max_angle; %Scale steering angle
 %% 
@@ -95,8 +95,12 @@ obstacle=createObstacle();
 [E,F,G]=baseConstraints(lanewidth,lanes);
 setconstraint(mpcobj, E,F,G,[1;1;0.1]);
 
+%Terminal constraint
+Y_term=struct('Weight',[0 5 0 0 30 0],'Min',[-10 -10 -10 -10 -lanes*lanewidth/2 0],'Max',[10 10 10 10 lanes*lanewidth/2 inf]);
+U_term=struct('Max',[max_angle maxT maxT maxT maxT]);
+setterminal(mpcobj,Y_term,U_term,mpcobj.PredictionHorizon)
 %Simulate the system
-refSpeed=[0;V;0;0;0;1000];
+refSpeed=[0;V;0;0;0;0];
 
 %Initial conditions
 x=eps_0;
@@ -109,7 +113,7 @@ T=0:Ts:30;
 %Vars to store simulation data
 states=zeros(length(x),length(T));
 inputs=zeros(length(u),length(T));
-detected=zeros(length(T));
+detected=zeros(1,length(T));
 % Simulate the system
 for i=1:length(T)
     %Update plant states
@@ -127,17 +131,17 @@ for i=1:length(T)
 
     opt=mpcmoveopt;
     %ADD updated constraints here
-    detect=ObstacleDetect(x,obstacle);
-    detected(i)=detect;
-%     detect=false;
+%     detect=ObstacleDetect(x,obstacle);
+%     detected(i)=detect;
+    detect=false;
     [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
 
     %Get the optimal control action
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, [], refSpeed, [],opt);
     %Time update of the system
-    x=x+Ts*LTIC(x,u,parameters);
-%     x=newsys.A*x+newsys.B*u;
+%     x=x+Ts*LTIC(x,u,parameters);
+    x=newsys.A*x+newsys.B*u;
     %Save the results
     states(:,i)=x;
     inputs(:,i)=u;
@@ -168,6 +172,8 @@ rectangle(Position=[obstacle.rrX,obstacle.rrY,obstacle.Length,obstacle.Width])
 rectangle('Position',[obstacle.rrSafeX,obstacle.rrSafeY,obstacle.Length+2*obstacle.safeDistanceX,obstacle.Width+2*obstacle.safeDistanceY],'LineStyle','--')
 yline(lanewidth/2,'b--')
 yline(-lanewidth/2,'b--')
+yline(-lanewidth*lanes/2,'r')
+yline(lanewidth*lanes/2,'r')
 % xlim([0 100])
 ylabel('Y')
 xlabel('X') 
