@@ -37,10 +37,8 @@ function [sys, U,Y,X,DX] = discreteSS(eps, u, params,Ts)
 
     % Extract inputs
     delta = u(1); % The angle between the body frame and the front axle
-    F_fl = u(2); % The force applied to the front left tire
-    F_fr = u(3); % The force applied to the front right tire
-    F_rl = u(4); % The force applied to the rear left tire
-    F_rr = u(5); % The force applied to the rear right tire
+    F_f = u(2); % The force applied to the front left tire
+    F_r = u(3); % The force applied to the front right tire
 
     % Extract parameters
     g = 9.81; % gravity
@@ -48,7 +46,7 @@ function [sys, U,Y,X,DX] = discreteSS(eps, u, params,Ts)
     I = params(2); % The moment of inertia of the car around the z axis
     a = params(3); % The distance from the center of mass to the front axle (x axis)
     b = params(4); % The distance from the center of mass to the rear axle (x axis)
-    c = params(5); % The distance from the center of mass to the left/right side of the tires (y axis)
+  
 
     % Calculate linearization matrices
 
@@ -60,24 +58,24 @@ function [sys, U,Y,X,DX] = discreteSS(eps, u, params,Ts)
              -sin(psi), cos(psi), 0, x_dot * (-sin(psi)) - y_dot * cos(psi), 0, 0];
     Ac = lin_x;
     
-    lin_u = [(F_fl * cos(delta) + F_fr * cos(delta))/m sin(delta)/m sin(delta)/m 0 0;
-             (-F_fl * sin(delta) - F_fr * sin(delta))/m cos(delta)/m cos(delta)/m 1/m 1/m;
-             (a * ((F_fl + F_fr) * cos(delta)) + c * ((F_fr - F_fl) * -sin(delta))) / I (a * sin(delta) - c * cos(delta)) / I (a * sin(delta) + c * cos(delta)) / I -c/I c/I;
-             0 0 0 0 0;
-             0 0 0 0 0;
-             0 0 0 0 0];
+    lin_u = [2*F_f*cos(delta)/m, 2*sin(delta)/m, 0;
+        -2*F_f*sin(delta)/m, 2*cos(delta)/m, 2/m;
+        2*F_f*a*cos(delta)/I, 2*a*sin(delta)/I 0;
+        0 0 0;
+        0 0 0;
+        0 0 0];
     Bc = lin_u;
     %Create ss object to store results
     [Ad,Bd]=adasblocks_utilDicretizeModel(Ac,Bc,Ts);
 %     C = diag([0, 0, 0, 0, 1, 1]); %output y is the position of the car in the reference frame
-    C=[0 1 0 0 0 0;
+    C=[sin(psi) cos(psi) 0 0 0 0;
         0 0 0 1 0 0;
         0 0 0 0 1 0;
         0 0 0 0 0 1];
 sys = ss(Ad, Bd, C, [],Ts);
-    sys.InputName = {'delta', 'F_fl', 'F_fr', 'F_rl', 'F_rr'};
+    sys.InputName = {'delta', 'F_f', 'F_r'};
     sys.StateName = {'y_dot', 'x_dot', 'psi_dot', 'psi', 'Y', 'X'};
-    sys.OutputName = {'x_dot', 'psi', 'Y', 'X'};
+    sys.OutputName = {'X_dot', 'psi', 'Y','X' };
     
     U=u;
     Y=C*eps;

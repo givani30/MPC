@@ -7,8 +7,7 @@ m= 1000; %kg, mass of the vehicle
 I=1500; %kgm^2, moment of inertia of the vehicle
 a=1.5; %m, distance from the center of mass to the front axle
 b=1.5; %m, distance from the center of mass to the rear axle
-c=1; % The distance from the center of mass to the left/right side of the tires (y axis)
-parameters=[m;I;a;b;c];
+parameters=[m;I;a;b];
 %% 
 % Define x0 equilibrium of with speed of 50 km/h$$\xi =\left\lbrack \begin{array}{cccccc}\dot{x} 
 % & \dot{y} & \dot{\psi} & \psi & Y & X\end{array}\right\rbrack =\left\lbrack 
@@ -28,7 +27,7 @@ eps_0=[0;
 
 %Sampling time of T_s=0.05
 Ts=5e-2;
-u_0=zeros(5,1);
+u_0=ones(3,1);
 [dsys,U,Y,X,DX]=(discreteSS(eps_0,u_0,parameters,Ts));
 mpcobj=mpc(dsys);
 %% 
@@ -44,13 +43,9 @@ mpcobj.ControlHorizon=5 %0.1 Sec
 
 mpcobj.ManipulatedVariables(2).RateMax=5*Ts; %Max throttle rate of change
 mpcobj.ManipulatedVariables(3).RateMax=5*Ts; %Max throttle rate of change
-mpcobj.ManipulatedVariables(4).RateMax=5*Ts; %Max throttle rate of change
-mpcobj.ManipulatedVariables(5).RateMax=5*Ts; %Max throttle rate of change
 
 mpcobj.ManipulatedVariables(2).RateMin=-5*Ts; %Min throttle rate of change
 mpcobj.ManipulatedVariables(3).RateMin=-5*Ts; %Min throttle rate of change
-mpcobj.ManipulatedVariables(4).RateMin=-5*Ts; %Min throttle rate of change
-mpcobj.ManipulatedVariables(5).RateMin=-5*Ts; %Min throttle rate of change
 
 % #Constraint on turing radius of car
 max_angle=1.5; %Max steering angle
@@ -63,27 +58,21 @@ mpcobj.ManipulatedVariables(1).Min=-max_angle; %Min steering angle
 maxT=2500;
 mpcobj.ManipulatedVariables(2).Max=maxT; %Max throttle [N*m]
 mpcobj.ManipulatedVariables(3).Max=maxT; %Max throttle [N*m]
-mpcobj.ManipulatedVariables(4).Max=maxT; %Max throttle [N*m]
-mpcobj.ManipulatedVariables(5).Max=maxT; %Max throttle [N*m]
 
 mpcobj.ManipulatedVariables(2).Min=-maxT; %Min throttle (brake) [N*m]
 mpcobj.ManipulatedVariables(3).Min=-maxT; %Min throttle (brake) [N*m]
-mpcobj.ManipulatedVariables(4).Min=-maxT; %Min throttle (brake) [N*m]
-mpcobj.ManipulatedVariables(5).Min=-maxT; %Min throttle (brake) [N*m]
 
 %TODO scale MV
 mpcobj.ManipulatedVariables(2).ScaleFactor=maxT; %Scale throttle
 mpcobj.ManipulatedVariables(3).ScaleFactor=maxT; %Scale throttle
-mpcobj.ManipulatedVariables(4).ScaleFactor=maxT; %Scale throttle
-mpcobj.ManipulatedVariables(5).ScaleFactor=maxT; %Scale throttle
-mpcobj.OV(3).ScaleFactor=1e10;
+% mpcobj.OV(3).ScaleFactor=1e10;
 % mpcobj.OV(5).ScaleFactor=1e6;
 
 mpcobj.ManipulatedVariables(1).ScaleFactor=max_angle; %Scale steering angle
 %% 
 
 % # Weights on output vars
-mpcobj.Weights.OutputVariables=[1e3 10 1e5 1e2]; %Weight on x_dot,y_dot,psi and y
+mpcobj.Weights.OutputVariables=[10 5 300 0.1]; %Weight on x_dot,y_dot,psi and y
 % # Nominal operating point
 mpcobj.Model.Nominal.X=X;
 mpcobj.Model.Nominal.U=U;
@@ -104,7 +93,7 @@ setconstraint(mpcobj, E,F,G,[0.1;0.1;0.01]);
 % U_term=struct('Max',[max_angle maxT maxT maxT maxT]);
 % setterminal(mpcobj,Y_term,U_term,mpcobj.PredictionHorizon)
 % %Simulate the system
-refSpeed=[V;0;0;0];
+refSpeed=[V;0;0 ;1];
 
 %Initial conditions
 x=eps_0;
@@ -112,7 +101,7 @@ u=u_0;
 y=eps_0;
 egostates=mpcstate(mpcobj);
 
-T=0:Ts:50;
+T=0:Ts:30;
 
 %Vars to store simulation data
 states=zeros(length(x),length(T));
@@ -141,7 +130,7 @@ for i=1:length(T)
     [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
 %Update ref speed
-    refspeed=[V 0 0 x(6)+4];
+    refspeed=[V 0 0 measurements(4)+1];
     %Get the optimal control action
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
     %Time update of the system

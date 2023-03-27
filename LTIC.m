@@ -31,10 +31,8 @@ function eps_dot = LTIC(eps, u, params)
 
     % Extract inputs
     delta = u(1); % The angle between the body frame and the front axle
-    F_fl = u(2); % The force applied to the front left tire
-    F_fr = u(3); % The force applied to the front right tire
-    F_rl = u(4); % The force applied to the rear left tire
-    F_rr = u(5); % The force applied to the rear right tire
+    F_f = u(2); % The force applied to the front left tire
+    F_r = u(3); % The force applied to the front right tire
 
     % Extract parameters
     g = 9.81; % gravity
@@ -42,22 +40,19 @@ function eps_dot = LTIC(eps, u, params)
     I = params(2); % The moment of inertia of the car around the z axis
     a = params(3); % The distance from the center of mass to the front axle (x axis)
     b = params(4); % The distance from the center of mass to the rear axle (x axis)
-    c = params(5); % The distance from the center of mass to the left/right side of the tires (y axis)
+   
 
     %Direction of tire forces
-    F_x_fl=F_fl*cos(delta);
-    F_y_fl=F_fl*sin(delta);
-    F_x_fr=F_fr*cos(delta);
-    F_y_fr=F_fr*sin(delta);
-    F_x_rl=F_rl;
-    F_y_rl=0;
-    F_x_rr=F_rr;
-    F_y_rr=0;
+    F_x_f=F_f*cos(delta);
+    F_y_f=F_f*sin(delta);
+    F_y_r=0;
+    F_x_r=F_r;
+
 
     %Calculate the derivatives of the states
-    y_ddot=-x_dot*psi_dot+F_y_fl/m+F_y_fr/m+F_y_rl/m+F_y_rr/m;
-    x_ddot=y_dot*psi_dot+F_x_fl/m+F_x_fr/m+F_x_rl/m+F_x_rr/m;
-    psi_ddot=(a*(F_y_fl+F_y_fr)-b*(F_y_rl+F_y_rr)+c*(-F_x_fl+F_x_fr-F_x_rl+F_x_rr))/I;
+    y_ddot=-x_dot*psi_dot+2*F_y_f/m+2*F_y_r/m;
+    x_ddot=y_dot*psi_dot+2*F_x_f/m+2*F_x_r/m;
+    psi_ddot=(2*a*F_y_f-2*b*F_y_r)/I;
     Y_dot=x_dot*sin(psi)+y_dot*cos(psi);
     X_dot=x_dot*cos(psi)-y_dot*sin(psi);
     eps_dot=[y_ddot; x_ddot; psi_ddot; psi_dot; Y_dot; X_dot];
