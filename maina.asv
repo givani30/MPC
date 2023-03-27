@@ -20,7 +20,7 @@ eps_0=[0;
     V;
     0;
     0;
-    0;
+    2;
     0];
 %% 
 % MPC
@@ -68,14 +68,13 @@ mpcobj.ManipulatedVariables(3).Min=0; %Min throttle (brake) [N*m]
 % mpcobj.ManipulatedVariables(3).ScaleFactor=maxT; %Scale throttle
 mpcobj.OV(1).ScaleFactor=1/100;
 mpcobj.OV(2).ScaleFactor=1/100;
-mpcobj.OV(3).ScaleFactor=1/200;
+mpcobj.OV(3).ScaleFactor=1/100;
 mpcobj.OV(4).ScaleFactor=1/100;
 
 mpcobj.ManipulatedVariables(1).ScaleFactor=max_angle; %Scale steering angle
 %% 
 mpcobj.Weights.ECR=1e4;
 % # Weights on output vars
-mpcobj.Weights.ManipulatedVariables=[1 10 10];
 mpcobj.Weights.OutputVariables=[10000 100 30000 1e-9]; %Weight on x_dot,y_dot,psi and y
 % # Nominal operating point
 mpcobj.Model.Nominal.X=X;
@@ -131,13 +130,13 @@ for i=1:length(T)
     ym(:,i)=measurements';
     opt=mpcmoveopt;
     %ADD updated constraints here
-    detect=ObstacleDetect(x,obstacle);
-    detected(i)=detect;
-%     detect=false;
+%     detect=ObstacleDetect(x,obstacle);
+%     detected(i)=detect;
+    detect=false;
     [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
 %Update ref speed
-    refspeed=[V 0 3 measurements(4)+5];
+    refspeed=[V 0 0 0];
     %Get the optimal control action
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
     %Time update of the system

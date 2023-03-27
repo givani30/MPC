@@ -1,4 +1,4 @@
-function [sys, U,Y,X,DX] = discreteSS(eps, u, params,Ts)
+function [A,Bmv] = jacobian(eps, u, params)
     % This function calculates the discrete LTI model of the system
     % around the equillibrium point eps and u.
     % The system is defined as:
@@ -41,7 +41,6 @@ function [sys, U,Y,X,DX] = discreteSS(eps, u, params,Ts)
     F_r = u(3); % The force applied to the front right tire
 
     % Extract parameters
-    params=params{1};
     g = 9.81; % gravity
     m = params(1); % mass of car
     I = params(2); % The moment of inertia of the car around the z axis
@@ -57,7 +56,7 @@ function [sys, U,Y,X,DX] = discreteSS(eps, u, params,Ts)
              0, 0, 1, 0, 0, 0;
              cos(psi), sin(psi), 0, x_dot * cos(psi) + y_dot * (-sin(psi)), 0, 0;
              -sin(psi), cos(psi), 0, x_dot * (-sin(psi)) - y_dot * cos(psi), 0, 0];
-    Ac = lin_x;
+    A = lin_x;
     
     lin_u = [2*F_f*cos(delta)/m, 2*sin(delta)/m, 0;
         -2*F_f*sin(delta)/m, 2*cos(delta)/m, 2/m;
@@ -65,21 +64,6 @@ function [sys, U,Y,X,DX] = discreteSS(eps, u, params,Ts)
         0 0 0;
         0 0 0;
         0 0 0];
-    Bc = lin_u;
-    %Create ss object to store results
-    [Ad,Bd]=adasblocks_utilDicretizeModel(Ac,Bc,Ts);
-%     C = diag([0, 0, 0, 0, 1, 1]); %output y is the position of the car in the reference frame
-    C=[-sin(psi) cos(psi) 0 0 0 0;
-        0 0 0 1 0 0;
-        0 0 0 0 1 0;
-        0 0 0 0 0 1];
-sys = ss(Ad, Bd, C, [],Ts);
-    sys.InputName = {'delta', 'F_f', 'F_r'};
-    sys.StateName = {'y_dot', 'x_dot', 'psi_dot', 'psi', 'Y', 'X'};
-    sys.OutputName = {'X_dot', 'psi', 'Y','X' };
-    
-    U=u;
-    Y=C*eps;
-    X=eps;
-    DX=Ad*eps+Bd*u-eps;
+    Bmv = lin_u;
+
 end

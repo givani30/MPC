@@ -8,6 +8,7 @@ I=1500; %kgm^2, moment of inertia of the vehicle
 a=1.5; %m, distance from the center of mass to the front axle
 b=1.5; %m, distance from the center of mass to the rear axle
 parameters=[m;I;a;b];
+params_cell={m,I,a,b};
 %% 
 % Define x0 equilibrium of with speed of 50 km/h$$\xi =\left\lbrack \begin{array}{cccccc}\dot{x} 
 % & \dot{y} & \dot{\psi} & \psi & Y & X\end{array}\right\rbrack =\left\lbrack 
@@ -20,7 +21,7 @@ eps_0=[0;
     V;
     0;
     0;
-    0;
+    2;
     0];
 %% 
 % MPC
@@ -28,60 +29,70 @@ eps_0=[0;
 %Sampling time of T_s=0.05
 Ts=5e-2;
 u_0=ones(3,1);
-[dsys,U,Y,X,DX]=(discreteSS(eps_0,u_0,parameters,Ts));
-mpcobj=mpc(dsys);
+
 %% 
 % STEPS:
 %% 
 % # Define prediction horizon
-
-mpcobj.PredictionHorizon = 2/Ts; %2 sec
-mpcobj.ControlHorizon=5; %0.1 Sec
+nlobj=nlmpc(6,4,3);
+nlobj.Model.StateFcn=@LTIC;
+nlobj.Jacobian.StateFcn=@jacobian;
+nlobj.Ts=Ts;
+nlobj.Model.OutputFcn=@outputfun;
+nlobj.PredictionHorizon = 2/Ts; %2 sec
+nlobj.ControlHorizon=5; %0.1 Sec
+nlobj.Model.NumberOfParameters=1;
 %% 
 % # Constraints on Control (Max Throttle, Max throttle rate of change. Max steering 
 % angle,)
 
-mpcobj.ManipulatedVariables(2).RateMax=5*Ts; %Max throttle rate of change
-mpcobj.ManipulatedVariables(3).RateMax=5*Ts; %Max throttle rate of change
+nlobj.Weights.OutputVariables=[1 1 1 1];
+nlobj.Weights.ManipulatedVariables=[1 5 5];
 
-mpcobj.ManipulatedVariables(2).RateMin=-5*Ts; %Min throttle rate of change
-mpcobj.ManipulatedVariables(3).RateMin=-5*Ts; %Min throttle rate of change
+%Constraints
 
-% #Constraint on turing radius of car
-max_angle=1.5; %Max steering angle
-mpcobj.MV(1).RateMax=pi/30*Ts;
-mpcobj.MV(1).RateMin=-pi/30*Ts;
-% mpcobj.ManipulatedVariables(1).Max=max_angle; %Max steering angle
-% mpcobj.ManipulatedVariables(1).Min=-max_angle; %Min steering angle
-
-% % Constraint on throttle
-% maxT=2500;
-% mpcobj.ManipulatedVariables(2).Max=maxT; %Max throttle [N*m]
-% mpcobj.ManipulatedVariables(3).Max=maxT; %Max throttle [N*m]
+validateFcns(nlobj,eps_0,u_0,[],{parameters})
+% mpcobj.ManipulatedVariables(2).RateMax=5*Ts; %Max throttle rate of change
+% mpcobj.ManipulatedVariables(3).RateMax=5*Ts; %Max throttle rate of change
 % 
-mpcobj.ManipulatedVariables(2).Min=0; %Min throttle (brake) [N*m]
-mpcobj.ManipulatedVariables(3).Min=0; %Min throttle (brake) [N*m]
-% mpcobj.MV(2).MinECR=0.1;
-% mpcobj.MV(3).MinECR=0.1;
-% %TODO scale MV
-% mpcobj.ManipulatedVariables(2).ScaleFactor=maxT; %Scale throttle
-% mpcobj.ManipulatedVariables(3).ScaleFactor=maxT; %Scale throttle
-mpcobj.OV(1).ScaleFactor=1/100;
-mpcobj.OV(2).ScaleFactor=1/100;
-mpcobj.OV(3).ScaleFactor=1/200;
-mpcobj.OV(4).ScaleFactor=1/100;
-
-mpcobj.ManipulatedVariables(1).ScaleFactor=max_angle; %Scale steering angle
-%% 
-mpcobj.Weights.ECR=1e4;
-% # Weights on output vars
-mpcobj.Weights.ManipulatedVariables=[1 10 10];
-mpcobj.Weights.OutputVariables=[10000 100 30000 1e-9]; %Weight on x_dot,y_dot,psi and y
-% # Nominal operating point
-mpcobj.Model.Nominal.X=X;
-mpcobj.Model.Nominal.U=U;
-mpcobj.Model.Nominal.DX=DX;
-mpcobj.Model.Nominal.Y=Y;
+% mpcobj.ManipulatedVariables(2).RateMin=-5*Ts; %Min throttle rate of change
+% mpcobj.ManipulatedVariables(3).RateMin=-5*Ts; %Min throttle rate of change
+% 
+% % #Constraint on turing radius of car
+% max_angle=1.5; %Max steering angle
+% mpcobj.MV(1).RateMax=pi/30*Ts;
+% mpcobj.MV(1).RateMin=-pi/30*Ts;
+% % mpcobj.ManipulatedVariables(1).Max=max_angle; %Max steering angle
+% % mpcobj.ManipulatedVariables(1).Min=-max_angle; %Min steering angle
+% 
+% % % Constraint on throttle
+% % maxT=2500;
+% % mpcobj.ManipulatedVariables(2).Max=maxT; %Max throttle [N*m]
+% % mpcobj.ManipulatedVariables(3).Max=maxT; %Max throttle [N*m]
+% % 
+% mpcobj.ManipulatedVariables(2).Min=0; %Min throttle (brake) [N*m]
+% mpcobj.ManipulatedVariables(3).Min=0; %Min throttle (brake) [N*m]
+% % mpcobj.MV(2).MinECR=0.1;
+% % mpcobj.MV(3).MinECR=0.1;
+% % %TODO scale MV
+% % mpcobj.ManipulatedVariables(2).ScaleFactor=maxT; %Scale throttle
+% % mpcobj.ManipulatedVariables(3).ScaleFactor=maxT; %Scale throttle
+% mpcobj.OV(1).ScaleFactor=1/100;
+% mpcobj.OV(2).ScaleFactor=1/100;
+% mpcobj.OV(3).ScaleFactor=1/200;
+% mpcobj.OV(4).ScaleFactor=1/100;
+% 
+% mpcobj.ManipulatedVariables(1).ScaleFactor=max_angle; %Scale steering angle
+% %% 
+% mpcobj.Weights.ECR=1e4;
+% % # Weights on output vars
+% mpcobj.Weights.ManipulatedVariables=[1 10 10];
+% mpcobj.Weights.OutputVariables=[10000 100 30000 1e-9]; %Weight on x_dot,y_dot,psi and y
+% % # Nominal operating point
+% mpcobj.Model.Nominal.X=X;
+% mpcobj.Model.Nominal.U=U;
+% mpcobj.Model.Nominal.DX=DX;
+% mpcobj.Model.Nominal.Y=Y;
 %%
 % # Define the constraints on the output variables
 %Type of constraints: E*u+F*y<=G
@@ -90,7 +101,7 @@ lanes=3;
 %Create obstacle
 obstacle=createObstacle();
 [E,F,G]=baseConstraints(lanewidth,lanes);
-setconstraint(mpcobj, E,F,G,[0.1;0.1;0.01]);
+% setconstraint(nlobj, E,F,G,[0.1;0.1;0.01]);
 
 % %Terminal constraint
 % Y_term=struct('Weight',[0 5 0 0 30 0],'Min',[-10 -10 -10 -10 -lanes*lanewidth/2 0],'Max',[10 10 10 10 lanes*lanewidth/2 inf]);
@@ -102,21 +113,21 @@ refSpeed=[V;0;0 ;1];
 %Initial conditions
 x=eps_0;
 u=u_0;
-y=eps_0;
-egostates=mpcstate(mpcobj);
-
+y=outputfun(x,u,{parameters});
 T=0:Ts:10;
-
+measurementfun=@(y)outputfun(y,u,parameters);
+EKF=extendedKalmanFilter(@LTIC,measurementfun,eps_0);
 %Vars to store simulation data
 states=zeros(length(x),length(T));
 inputs=zeros(length(u),length(T));
 detected=zeros(1,length(T));
 ym=zeros(4,length(T));
-review(mpcobj)
+% review(nlobj)
+
 % Simulate the system
+opt=nlmpcmoveopt;
+opt.Parameters={parameters};
 for i=1:length(T)
-    %Update plant states
-    [newsys,U,Y,X,DX]=(discreteSS(x,u,parameters,Ts));
     %Detection logic
 %     if ObstacleDetected(x,obstacle):
 %         [E,F,G]=updateConstraints(x,obstacle);
@@ -126,23 +137,24 @@ for i=1:length(T)
         
     %Update constraints
     %Update nominal operating point
-    newNominal=struct('X',X,'U',U,'DX',DX,'Y',Y);
-    measurements=newsys.C*x+newsys.D*u;
-    ym(:,i)=measurements';
-    opt=mpcmoveopt;
+    xk=correct(EKF,y);
+
     %ADD updated constraints here
     detect=ObstacleDetect(x,obstacle);
     detected(i)=detect;
 %     detect=false;
     [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
-    opt.CustomConstraint=struct('E',E,'F',F,'G',G);
+%     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
+    
 %Update ref speed
-    refspeed=[V 0 3 measurements(4)+5];
+%     refspeed=[V; 0; 0; 0];
     %Get the optimal control action
-    [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
+    [u,nloptions,info]=nlmpcmove(nlobj, xk, u, [], [],opt);
+
     %Time update of the system
 %     x=x+Ts*LTIC(x,u,parameters);
-    x=newsys.A*x+newsys.B*u;
+    predict(EKF,u,parameters);
+    x=LTID(x,u,parameters,Ts);
     %Save the results
     states(:,i)=x;
     inputs(:,i)=u;
