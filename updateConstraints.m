@@ -28,6 +28,6 @@ else
    end
    [E,F,G]=baseConstraints(lanes,lanes);
    %Update third row of F and G
-   F(3,:)=[0 0 0 -1 cons_slope];
+   F(3,:)=[0 0 -1 cons_slope];
    G(3)=-intercept;
 end

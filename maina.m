@@ -76,14 +76,14 @@ mpcobj.ManipulatedVariables(2).ScaleFactor=maxT; %Scale throttle
 mpcobj.ManipulatedVariables(3).ScaleFactor=maxT; %Scale throttle
 mpcobj.ManipulatedVariables(4).ScaleFactor=maxT; %Scale throttle
 mpcobj.ManipulatedVariables(5).ScaleFactor=maxT; %Scale throttle
-mpcobj.OV(4).ScaleFactor=1e10;
+mpcobj.OV(3).ScaleFactor=1e10;
 % mpcobj.OV(5).ScaleFactor=1e6;
 
 mpcobj.ManipulatedVariables(1).ScaleFactor=max_angle; %Scale steering angle
 %% 
 
 % # Weights on output vars
-mpcobj.Weights.OutputVariables=[0 1e3 10 1e5 1e2]; %Weight on x_dot,y_dot,psi and y
+mpcobj.Weights.OutputVariables=[1e3 10 1e5 1e2]; %Weight on x_dot,y_dot,psi and y
 % # Nominal operating point
 mpcobj.Model.Nominal.X=X;
 mpcobj.Model.Nominal.U=U;
@@ -97,14 +97,14 @@ lanes=3;
 %Create obstacle
 obstacle=createObstacle();
 [E,F,G]=baseConstraints(lanewidth,lanes);
-setconstraint(mpcobj, E,F,G,[1;1;0.1]);
+setconstraint(mpcobj, E,F,G,[0.1;0.1;0.01]);
 
 % %Terminal constraint
 % Y_term=struct('Weight',[0 5 0 0 30 0],'Min',[-10 -10 -10 -10 -lanes*lanewidth/2 0],'Max',[10 10 10 10 lanes*lanewidth/2 inf]);
 % U_term=struct('Max',[max_angle maxT maxT maxT maxT]);
 % setterminal(mpcobj,Y_term,U_term,mpcobj.PredictionHorizon)
 % %Simulate the system
-refSpeed=[0;V;0;0;0];
+refSpeed=[V;0;0;0];
 
 %Initial conditions
 x=eps_0;
@@ -112,7 +112,7 @@ u=u_0;
 y=eps_0;
 egostates=mpcstate(mpcobj);
 
-T=0:Ts:30;
+T=0:Ts:50;
 
 %Vars to store simulation data
 states=zeros(length(x),length(T));
@@ -133,7 +133,6 @@ for i=1:length(T)
     %Update nominal operating point
     newNominal=struct('X',X,'U',U,'DX',DX,'Y',Y);
     measurements=newsys.C*x+newsys.D*u;
-
     opt=mpcmoveopt;
     %ADD updated constraints here
 %     detect=ObstacleDetect(x,obstacle);
@@ -141,12 +140,13 @@ for i=1:length(T)
     detect=false;
     [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
-
+%Update ref speed
+    refspeed=[V 0 0 x(6)+4];
     %Get the optimal control action
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
     %Time update of the system
-%     x=x+Ts*LTIC(x,u,parameters);
-    x=newsys.A*x+newsys.B*u;
+    x=x+Ts*LTIC(x,u,parameters);
+%     x=newsys.A*x+newsys.B*u;
     %Save the results
     states(:,i)=x;
     inputs(:,i)=u;
