@@ -53,14 +53,14 @@ mpcobj.ManipulatedVariables(4).RateMin=-5*Ts; %Min throttle rate of change
 mpcobj.ManipulatedVariables(5).RateMin=-5*Ts; %Min throttle rate of change
 
 % #Constraint on turing radius of car
-max_angle=0.5; %Max steering angle
-mpcobj.MV(1).RateMax=pi/30*Ts;
-mpcobj.MV(1).RateMin=-pi/30*Ts;
+max_angle=1.5; %Max steering angle
+% mpcobj.MV(1).RateMax=pi/30*Ts;
+% mpcobj.MV(1).RateMin=-pi/30*Ts;
 mpcobj.ManipulatedVariables(1).Max=max_angle; %Max steering angle
 mpcobj.ManipulatedVariables(1).Min=-max_angle; %Min steering angle
 
 % Constraint on throttle
-maxT=250;
+maxT=2500;
 mpcobj.ManipulatedVariables(2).Max=maxT; %Max throttle [N*m]
 mpcobj.ManipulatedVariables(3).Max=maxT; %Max throttle [N*m]
 mpcobj.ManipulatedVariables(4).Max=maxT; %Max throttle [N*m]
@@ -76,13 +76,14 @@ mpcobj.ManipulatedVariables(2).ScaleFactor=maxT; %Scale throttle
 mpcobj.ManipulatedVariables(3).ScaleFactor=maxT; %Scale throttle
 mpcobj.ManipulatedVariables(4).ScaleFactor=maxT; %Scale throttle
 mpcobj.ManipulatedVariables(5).ScaleFactor=maxT; %Scale throttle
-mpcobj.OV(5).ScaleFactor=1e5;
+mpcobj.OV(4).ScaleFactor=1e10;
+% mpcobj.OV(5).ScaleFactor=1e6;
 
 mpcobj.ManipulatedVariables(1).ScaleFactor=max_angle; %Scale steering angle
 %% 
 
 % # Weights on output vars
-mpcobj.Weights.OutputVariables=[1 5 1 1 300 0]; %Weight on x_dot,y_dot,psi and y
+mpcobj.Weights.OutputVariables=[0 1e3 10 1e5 1e2]; %Weight on x_dot,y_dot,psi and y
 % # Nominal operating point
 mpcobj.Model.Nominal.X=X;
 mpcobj.Model.Nominal.U=U;
@@ -103,7 +104,7 @@ setconstraint(mpcobj, E,F,G,[1;1;0.1]);
 % U_term=struct('Max',[max_angle maxT maxT maxT maxT]);
 % setterminal(mpcobj,Y_term,U_term,mpcobj.PredictionHorizon)
 % %Simulate the system
-refSpeed=[0;V;0;0;0;0];
+refSpeed=[0;V;0;0;0];
 
 %Initial conditions
 x=eps_0;
@@ -135,9 +136,9 @@ for i=1:length(T)
 
     opt=mpcmoveopt;
     %ADD updated constraints here
-    detect=ObstacleDetect(x,obstacle);
-    detected(i)=detect;
-%     detect=false;
+%     detect=ObstacleDetect(x,obstacle);
+%     detected(i)=detect;
+    detect=false;
     [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
 
