@@ -18,7 +18,7 @@ parameters=[m;I;a;b;c];
 % & F_{r,r} \end{array}\right\rbrack$$
 V=10;
 eps_0=[0;
-    0.9*V;
+    V;
     0;
     0;
     0;
@@ -38,7 +38,7 @@ mpcobj=mpc(dsys);
 %% 
 % # Define prediction horizon
 
-mpcobj.PredictionHorizon = 40; %2 sec
+mpcobj.PredictionHorizon = 50; %2 sec
 mpcobj.ControlHorizon=5; %0.1 Sec
 %% 
 % # Constraints on Control (Max Throttle, Max throttle rate of change. Max steering 
@@ -77,29 +77,21 @@ mpcobj.ManipulatedVariables(4).Min=-maxT; %Min throttle (brake) [N*m]
 mpcobj.ManipulatedVariables(5).Min=-maxT; %Min throttle (brake) [N*m]
 
 %TODO scale MV
-Tau_scale=200;
-mpcobj.MV(1).ScaleFactor=0.2;
-mpcobj.ManipulatedVariables(2).ScaleFactor=Tau_scale; %Scale throttle
-mpcobj.ManipulatedVariables(3).ScaleFactor=Tau_scale; %Scale throttle
-mpcobj.ManipulatedVariables(4).ScaleFactor=Tau_scale; %Scale throttle
-mpcobj.ManipulatedVariables(5).ScaleFactor=Tau_scale; %Scale throttle
-mpcobj.OV(1).Scalefactor=2;
-mpcobj.OV(2).ScaleFactor=0.2;
-mpcobj.OV(3).ScaleFactor=1e2;
-mpcobj.OV(4).Scalefactor=1;
+mpcobj.ManipulatedVariables(2).ScaleFactor=2; %Scale throttle
+mpcobj.ManipulatedVariables(3).ScaleFactor=2; %Scale throttle
+mpcobj.ManipulatedVariables(4).ScaleFactor=2; %Scale throttle
+mpcobj.ManipulatedVariables(5).ScaleFactor=2; %Scale throttle
+mpcobj.OV(3).ScaleFactor=1e10;
 % mpcobj.OV(5).ScaleFactor=1e6;
-mpcobj.OV(3).Min=-lanewidth*lanes/2;
-mpcobj.OV(3).Max=lanewidth*lanes/2;
-mpcobj.OV(1).Min=0;
+% mpcobj.OV(3).Min=-lanewidth*lanes/2;
+% mpcobj.OV(3).Max=lanewidth*lanes/2;
 
 mpcobj.ManipulatedVariables(1).ScaleFactor=0.2; %Scale steering angle
 %% ;
 
 % # Weights on output vars
-mpcobj.Weights.ManipulatedVariables=[0.1 1 1 1 1];
-mpcobj.Weights.ManipulatedVariablesRate=1e2*[0.1 1 1 1 1];
-mpcobj.Weights.OutputVariables=[1e2 10 1e4 0]; %Weight on x_dot,y_dot,psi and y
-% mpcobj.Weights.ECR=1e3;
+mpcobj.Weights.ManipulatedVariablesRate=[1e2 0.1 0.1 0.1 0.1];
+mpcobj.Weights.OutputVariables=[1e3 1e8 1e10 0]; %Weight on x_dot,y_dot,psi and y
 % # Nominal operating point
 mpcobj.Model.Nominal.X=X;
 mpcobj.Model.Nominal.U=U;
@@ -112,7 +104,7 @@ mpcobj.Model.Nominal.Y=Y;
 %Create obstacle
 obstacle=createObstacle();
 [E,F,G]=baseConstraints(lanewidth,lanes);
-setconstraint(mpcobj, E,F,G,[1;1;0.1]);
+setconstraint(mpcobj, E,F,G,[0.1;0.1;0.01]);
 
 % %Terminal constraint
 % Y_term=struct('Weight',[0 5 0 0 30 0],'Min',[-10 -10 -10 -10 -lanes*lanewidth/2 0],'Max',[10 10 10 10 lanes*lanewidth/2 inf]);
@@ -127,7 +119,7 @@ u=u_0;
 y=dsys.C*eps_0;
 egostates=mpcstate(mpcobj);
 
-T=0:Ts:30;
+T=0:Ts:50;
 
 %Vars to store simulation data
 states=zeros(length(x),length(T));
@@ -151,13 +143,13 @@ for i=1:length(T)
     measurements=newsys.C*x+newsys.D*u;
     opt=mpcmoveopt;
     %ADD updated constraints here
-    detect=ObstacleDetect(x,obstacle);
-    detected(i)=detect;
-%     detect=false;
+%     detect=ObstacleDetect(x,obstacle);
+%     detected(i)=detect;
+    detect=false;
     [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
 %Update ref speed
-    refspeed=[V 0 0 0];
+    refspeed=[V 0 0 inf];
     %Get the optimal control action
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
 %     [u]=mpcmove(mpcobj,egostates,measurements,refspeed)
