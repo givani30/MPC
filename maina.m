@@ -90,7 +90,7 @@ mpcobj.ManipulatedVariables(1).ScaleFactor=0.2; %Scale steering angle
 %% ;
 
 % # Weights on output vars
-mpcobj.Weights.ManipulatedVariablesRate=[1e3 0.1 0.1 0.1 0.1];
+mpcobj.Weights.ManipulatedVariablesRate=[1e2 0.1 0.1 0.1 0.1];
 mpcobj.Weights.OutputVariables=[1e3 1e8 1e10 0]; %Weight on x_dot,y_dot,psi and y
 % # Nominal operating point
 mpcobj.Model.Nominal.X=X;
@@ -143,9 +143,9 @@ for i=1:length(T)
     measurements=newsys.C*x+newsys.D*u;
     opt=mpcmoveopt;
     %ADD updated constraints here
-    detect=ObstacleDetect(x,obstacle);
-    detected(i)=detect;
-%     detect=false;
+%     detect=ObstacleDetect(x,obstacle);
+%     detected(i)=detect;
+    detect=false;
     [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
 %Update ref speed
