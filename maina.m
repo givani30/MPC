@@ -38,8 +38,8 @@ mpcobj=mpc(dsys);
 %% 
 % # Define prediction horizon
 
-mpcobj.PredictionHorizon = 45; %2 sec
-mpcobj.ControlHorizon=10; %0.1 Sec
+mpcobj.PredictionHorizon = 50; %2 sec
+mpcobj.ControlHorizon=5; %0.1 Sec
 %% 
 % # Constraints on Control (Max Throttle, Max throttle rate of change. Max steering 
 % angle,)
@@ -90,8 +90,8 @@ mpcobj.ManipulatedVariables(1).ScaleFactor=0.2; %Scale steering angle
 %% ;
 
 % # Weights on output vars
-mpcobj.Weights.ManipulatedVariablesRate=[0.1 1 1 1 1];
-mpcobj.Weights.OutputVariables=[1e3 10 1e7 0]; %Weight on x_dot,y_dot,psi and y
+mpcobj.Weights.ManipulatedVariablesRate=[1e3 0.1 0.1 0.1 0.1];
+mpcobj.Weights.OutputVariables=[1e3 1e8 1e10 0]; %Weight on x_dot,y_dot,psi and y
 % # Nominal operating point
 mpcobj.Model.Nominal.X=X;
 mpcobj.Model.Nominal.U=U;
@@ -119,7 +119,7 @@ u=u_0;
 y=dsys.C*eps_0;
 egostates=mpcstate(mpcobj);
 
-T=0:Ts:30;
+T=0:Ts:50;
 
 %Vars to store simulation data
 states=zeros(length(x),length(T));
@@ -149,7 +149,7 @@ for i=1:length(T)
     [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
 %Update ref speed
-    refspeed=[V 0 0 0];
+    refspeed=[V 0 0 inf];
     %Get the optimal control action
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
 %     [u]=mpcmove(mpcobj,egostates,measurements,refspeed)
