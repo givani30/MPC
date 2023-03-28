@@ -21,10 +21,8 @@ eps_0=[0;
     V;
     0;
     0;
-    1;
+    0;
     0];
-lanewidth=3.5;
-lanes=3;
 %% 
 % MPC
 
@@ -47,15 +45,15 @@ Throttlerate=10;
 mpcobj.ManipulatedVariables(2).RateMax=Throttlerate; %Max throttle rate of change
 mpcobj.ManipulatedVariables(3).RateMax=Throttlerate; %Max throttle rate of change
 
-% mpcobj.ManipulatedVariables(2).RateMax=5*Ts; %Max throttle rate of change
-% mpcobj.ManipulatedVariables(3).RateMax=5*Ts; %Max throttle rate of change
-% mpcobj.ManipulatedVariables(4).RateMax=5*Ts; %Max throttle rate of change
-% mpcobj.ManipulatedVariables(5).RateMax=5*Ts; %Max throttle rate of change
-% 
-% mpcobj.ManipulatedVariables(2).RateMin=-5*Ts; %Min throttle rate of change
-% mpcobj.ManipulatedVariables(3).RateMin=-5*Ts; %Min throttle rate of change
-% mpcobj.ManipulatedVariables(4).RateMin=-5*Ts; %Min throttle rate of change
-% mpcobj.ManipulatedVariables(5).RateMin=-5*Ts; %Min throttle rate of change
+mpcobj.ManipulatedVariables(2).RateMax=5*Ts; %Max throttle rate of change
+mpcobj.ManipulatedVariables(3).RateMax=5*Ts; %Max throttle rate of change
+mpcobj.ManipulatedVariables(4).RateMax=5*Ts; %Max throttle rate of change
+mpcobj.ManipulatedVariables(5).RateMax=5*Ts; %Max throttle rate of change
+
+mpcobj.ManipulatedVariables(2).RateMin=-5*Ts; %Min throttle rate of change
+mpcobj.ManipulatedVariables(3).RateMin=-5*Ts; %Min throttle rate of change
+mpcobj.ManipulatedVariables(4).RateMin=-5*Ts; %Min throttle rate of change
+mpcobj.ManipulatedVariables(5).RateMin=-5*Ts; %Min throttle rate of change
 
 % #Constraint on turing radius of car
 max_angle=1.5; %Max steering angle
@@ -77,12 +75,12 @@ mpcobj.ManipulatedVariables(4).Min=-maxT; %Min throttle (brake) [N*m]
 mpcobj.ManipulatedVariables(5).Min=-maxT; %Min throttle (brake) [N*m]
 
 %TODO scale MV
-% mpcobj.ManipulatedVariables(2).ScaleFactor=maxT; %Scale throttle
-% mpcobj.ManipulatedVariables(3).ScaleFactor=maxT; %Scale throttle
-% mpcobj.ManipulatedVariables(4).ScaleFactor=maxT; %Scale throttle
-% mpcobj.ManipulatedVariables(5).ScaleFactor=maxT; %Scale throttle
-mpcobj.OutputVariables(3).Max = lanewidth*lanes/2;
-mpcobj.OutputVariables(3).Min = -lanewidth*lanes/2;
+mpcobj.ManipulatedVariables(2).ScaleFactor=maxT; %Scale throttle
+mpcobj.ManipulatedVariables(3).ScaleFactor=maxT; %Scale throttle
+mpcobj.ManipulatedVariables(4).ScaleFactor=maxT; %Scale throttle
+mpcobj.ManipulatedVariables(5).ScaleFactor=maxT; %Scale throttle
+mpcobj.OV(3).ScaleFactor=1e10;
+% mpcobj.OV(5).ScaleFactor=1e6;
 
 mpcobj.ManipulatedVariables(1).ScaleFactor=0.2; %Scale steering angle
 %% 
@@ -97,7 +95,8 @@ mpcobj.Model.Nominal.Y=Y;
 %%
 % # Define the constraints on the output variables
 %Type of constraints: E*u+F*y<=G
-
+lanewidth=3.5;
+lanes=3;
 %Create obstacle
 obstacle=createObstacle();
 [E,F,G]=baseConstraints(lanewidth,lanes);
@@ -140,9 +139,9 @@ for i=1:length(T)
     measurements=newsys.C*x+newsys.D*u;
     opt=mpcmoveopt;
     %ADD updated constraints here
-    detect=ObstacleDetect(x,obstacle);
-    detected(i)=detect;
-%     detect=false;
+%     detect=ObstacleDetect(x,obstacle);
+%     detected(i)=detect;
+    detect=false;
     [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
 %Update ref speed
@@ -151,9 +150,8 @@ for i=1:length(T)
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
 %     [u]=mpcmove(mpcobj,egostates,measurements,refspeed)
     %Time update of the system
-%     x=x+Ts*LTIC(x,u,parameters);
+    x=x+Ts*LTIC(x,u,parameters);
 %     x=newsys.A*x+newsys.B*u;
-    x=egostates.Plant;
     %Save the results
     states(:,i)=x;
     inputs(:,i)=u;
