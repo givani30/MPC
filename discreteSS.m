@@ -70,7 +70,7 @@ function [sys, U,Y,X,DX] = discreteSS(eps, u, params,Ts)
     %Create ss object to store results
     [Ad,Bd]=adasblocks_utilDicretizeModel(Ac,Bc,Ts);
 %     C = diag([0, 0, 0, 0, 1, 1]); %output y is the position of the car in the reference frame
-    C=[sin(psi) cos(psi) 0 0 0 0;
+    C=[0 1 0 0 0 0;
         0 0 0 1 0 0;
         0 0 0 0 1 0;
         0 0 0 0 0 1];
