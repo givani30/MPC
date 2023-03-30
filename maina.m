@@ -58,7 +58,7 @@ mpcobj.ControlHorizon=5; %0.1 Sec
 % mpcobj.ManipulatedVariables(5).RateMin=-5*Ts; %Min throttle rate of change
 
 % #Constraint on turing radius of car
-max_angle=1.5; %Max steering angle
+max_angle=2; %Max steering angle
 % mpcobj.MV(1).RateMax=pi/30;
 % mpcobj.MV(1).RateMin=-pi/30;
 mpcobj.ManipulatedVariables(1).Max=max_angle; %Max steering angle
@@ -143,9 +143,9 @@ for i=1:length(T)
     measurements=newsys.C*x+newsys.D*u;
     opt=mpcmoveopt;
     %ADD updated constraints here
-%     detect=ObstacleDetect(x,obstacle);
-%     detected(i)=detect;
-    detect=false;
+    detect=ObstacleDetect(x,obstacle);
+    detected(i)=detect;
+%     detect=false;
     [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
 %Update ref speed
