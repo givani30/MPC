@@ -44,9 +44,9 @@ if detection
         constraintSlope =0;
         constraintIntercept=-lanewidth*lanes/2;
     end  
-elseif not(detection)&&X>=obstacle.flSafeX
-    constraintSlope =0;
-    constraintIntercept=0;
+% elseif not(detection)&&X>=obstacle.flSafeX
+%     constraintSlope =0;
+%     constraintIntercept=0;
 else
     constraintSlope = 0;
     constraintIntercept=-lanewidth*lanes/2;

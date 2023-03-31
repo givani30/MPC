@@ -90,7 +90,7 @@ mpcobj.ManipulatedVariables(1).ScaleFactor=0.2; %Scale steering angle
 %% ;
 
 % # Weights on output vars
-mpcobj.Weights.ManipulatedVariablesRate=[1e2 0.1 0.1 0.1 0.1];
+mpcobj.Weights.ManipulatedVariablesRate=[1 0.1 0.1 0.1 0.1];
 mpcobj.Weights.OutputVariables=[1e3 1e8 1e10 0]; %Weight on x_dot,y_dot,psi and y
 % # Nominal operating point
 mpcobj.Model.Nominal.X=X;
@@ -111,7 +111,7 @@ setconstraint(mpcobj, E,F,G,[0.1;0.1;0.01]);
 % U_term=struct('Max',[max_angle maxT maxT maxT maxT]);
 % setterminal(mpcobj,Y_term,U_term,mpcobj.PredictionHorizon)
 % %Simulate the system
-refSpeed=[V;0;0;0];
+refSpeed=[2*V;0;0;0];
 
 %Initial conditions
 x=eps_0;
@@ -149,7 +149,8 @@ for i=1:length(T)
     [E,F,G]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
 %Update ref speed
-    refspeed=[V 0 0 inf];
+    refSpeed=[2*V ;0; 0; 0];
+%     refspeed=[V 0 0 inf];
     %Get the optimal control action
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
 %     [u]=mpcmove(mpcobj,egostates,measurements,refspeed)
@@ -188,10 +189,11 @@ yline(lanewidth/2,'b--')
 yline(-lanewidth/2,'b--')
 yline(-lanewidth*lanes/2,'r')
 yline(lanewidth*lanes/2,'r')
-% xlim([0 100])
+xlim([0 500])
 ylabel('Y')
 xlabel('X') 
 title('Position')
+
 hold off
 %%
 figure
