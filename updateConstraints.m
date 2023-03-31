@@ -53,6 +53,6 @@ else
 end
  [E,F,G]=baseConstraints(lanes,lanes);
    %Update third row of F and G
-   F(3,:)=[0 0 -1 constraintSlope];
+   F(3,:)=[0 0 0 -1 constraintSlope];
    G(3)=-1*constraintIntercept;
 %return constraints

@@ -39,7 +39,7 @@ mpcobj=mpc(dsys);
 % # Define prediction horizon
 
 mpcobj.PredictionHorizon = 50; %2 sec
-mpcobj.ControlHorizon=5; %0.1 Sec
+mpcobj.ControlHorizon=10; %0.1 Sec
 %% 
 % # Constraints on Control (Max Throttle, Max throttle rate of change. Max steering 
 % angle,)
@@ -58,7 +58,7 @@ mpcobj.ControlHorizon=5; %0.1 Sec
 % mpcobj.ManipulatedVariables(5).RateMin=-5*Ts; %Min throttle rate of change
 
 % #Constraint on turing radius of car
-max_angle=1.5; %Max steering angle
+max_angle=2; %Max steering angle
 % mpcobj.MV(1).RateMax=pi/30;
 % mpcobj.MV(1).RateMin=-pi/30;
 mpcobj.ManipulatedVariables(1).Max=max_angle; %Max steering angle
@@ -81,17 +81,20 @@ mpcobj.ManipulatedVariables(2).ScaleFactor=2; %Scale throttle
 mpcobj.ManipulatedVariables(3).ScaleFactor=2; %Scale throttle
 mpcobj.ManipulatedVariables(4).ScaleFactor=2; %Scale throttle
 mpcobj.ManipulatedVariables(5).ScaleFactor=2; %Scale throttle
+mpcobj.OV(1).scalefactor=1e3;
+mpcobj.OV(2).scalefactor=1e-2;
 mpcobj.OV(3).ScaleFactor=1e10;
+mpcobj.OV(4).ScaleFactor=1e5;
 % mpcobj.OV(5).ScaleFactor=1e6;
 % mpcobj.OV(3).Min=-lanewidth*lanes/2;
 % mpcobj.OV(3).Max=lanewidth*lanes/2;
 
-mpcobj.ManipulatedVariables(1).ScaleFactor=0.2; %Scale steering angle
+mpcobj.ManipulatedVariables(1).ScaleFactor=0.02; %Scale steering angle
 %% ;
 
 % # Weights on output vars
 mpcobj.Weights.ManipulatedVariablesRate=[1 0.1 0.1 0.1 0.1];
-mpcobj.Weights.OutputVariables=[1e3 1e8 1e10 0]; %Weight on x_dot,y_dot,psi and y
+mpcobj.Weights.OutputVariables=[1 1e5 1e7 0]; %Weight on x_dot,y_dot,psi and y
 % # Nominal operating point
 mpcobj.Model.Nominal.X=X;
 mpcobj.Model.Nominal.U=U;
