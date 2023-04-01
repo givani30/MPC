@@ -33,11 +33,12 @@ function [E,F,G,constraintSlope,constraintIntercept] = updateConstraints(eps,obs
 % end
 
 if detection
+     Slope=(obstacle.rlSafeY-Y)/(obstacle.rlSafeX-X);
     if X<=obstacle.rlSafeX %voor obstakel
-        Slope=(obstacle.rlSafeY-Y)/(obstacle.rlSafeX-X);
+%         Slope=(obstacle.rlSafeY-Y)/(obstacle.rlSafeX-X);
         constraintSlope=tan(atan2(Slope,1));
         constraintIntercept=obstacle.rlSafeY - constraintSlope*obstacle.rlSafeX;
-    elseif (X>obstacle.rlSafeX)&&(X<=obstacle.flX)
+    elseif (X>obstacle.rlSafeX)&&(X<=obstacle.flSafeX)
         Slope=(obstacle.flSafeY-Y)/(obstacle.flSafeX-X);
         constraintSlope=tan(atan2(Slope,1));
         constraintIntercept=obstacle.flSafeY-constraintSlope*obstacle.flSafeX;
@@ -47,9 +48,7 @@ if detection
         constraintSlope =0;
         constraintIntercept=-lanewidth*lanes/2;
     end  
-% elseif not(detection)&&X>=obstacle.flSafeX
-%     constraintSlope =0;
-%     constraintIntercept=0;
+
 else
     constraintSlope = 0;
     constraintIntercept=-lanewidth*lanes/2;
