@@ -55,20 +55,21 @@ function [sys, U,Y,X,DX] = discreteSS(eps, u, params,Ts)
     
     lin_u =  [0  , 0;
      0  , 0;
-     (V*(tan(delta)^2 + 1))/(a+b), 0;
-     0, 0.5];
+     0  , (V*(tan(delta)^2 + 1))/(a+b);
+     0.5, 0];
     Bc = lin_u;
     %Create ss object to store results
-    C=eye(4);
+    C=eye(4)
     D = zeros(4,2);
-    sysc = ss(Ac,Bc,C,D);
-    sys =c2d(sysc,Ts, 'zoh');
-    sys.InputName = {'delta', 'F'};
-    sys.StateName = {'X', 'Y', 'psi', 'V'};
-    sys.OutputName = sys.StateName;
+    sysc = ss(Ac,Bc)
+    [Ad,Bd]=c2d(Ac,Bc,Ts, 'zoh');
+sys = ss(Ad, Bd, C, [],Ts);
+    sys.InputName = {'delta', 'F_fl', 'F_fr', 'F_rl', 'F_rr'};
+    sys.StateName = {'y_dot', 'x_dot', 'psi_dot', 'psi', 'Y', 'X'};
+    sys.OutputName = {'x_dot', 'psi', 'Y', 'X'};
     
     U=u;
     Y=C*eps;
     X=eps;
-    DX=sys.A*eps+sys.B*u-eps;
+    DX=Ad*eps+Bd*u-eps;
 end

@@ -17,12 +17,7 @@ parameters=[m;I;a;b;c];
 % $$u=\left\lbrack \begin{array}{ccccc}\delta  & F_{f,l}  & F_{f,r}  & F_{r,l}  
 % & F_{r,r} \end{array}\right\rbrack$$
 V=10;
-eps_0=[0;
-    V;
-    0;
-    0;
-    0;
-    0];
+eps_0=[0;0;0,V];
 lanewidth=3.5;
 lanes=3;
 %% 
@@ -30,7 +25,7 @@ lanes=3;
 
 %Sampling time of T_s=0.05
 Ts=5e-2;
-u_0=zeros(5,1);
+u_0=zeros(2,1);
 [dsys,U,Y,X,DX]=(discreteSS(eps_0,u_0,parameters,Ts));
 mpcobj=mpc(dsys);
 %% 
@@ -43,49 +38,6 @@ mpcobj.ControlHorizon=5; %0.1 Sec
 %% 
 % # Constraints on Control (Max Throttle, Max throttle rate of change. Max steering 
 % angle,)
-% Throttlerate=10;
-% mpcobj.ManipulatedVariables(2).RateMax=Throttlerate; %Max throttle rate of change
-% mpcobj.ManipulatedVariables(3).RateMax=Throttlerate; %Max throttle rate of change
-% 
-% mpcobj.ManipulatedVariables(2).RateMax=5*Ts; %Max throttle rate of change
-% mpcobj.ManipulatedVariables(3).RateMax=5*Ts; %Max throttle rate of change
-% mpcobj.ManipulatedVariables(4).RateMax=5*Ts; %Max throttle rate of change
-% mpcobj.ManipulatedVariables(5).RateMax=5*Ts; %Max throttle rate of change
-% 
-% mpcobj.ManipulatedVariables(2).RateMin=-5*Ts; %Min throttle rate of change
-% mpcobj.ManipulatedVariables(3).RateMin=-5*Ts; %Min throttle rate of change
-% mpcobj.ManipulatedVariables(4).RateMin=-5*Ts; %Min throttle rate of change
-% mpcobj.ManipulatedVariables(5).RateMin=-5*Ts; %Min throttle rate of change
-
-% #Constraint on turing radius of car
-max_angle=1.5; %Max steering angle
-% mpcobj.MV(1).RateMax=pi/30;
-% mpcobj.MV(1).RateMin=-pi/30;
-mpcobj.ManipulatedVariables(1).Max=max_angle; %Max steering angle
-mpcobj.ManipulatedVariables(1).Min=-max_angle; %Min steering angle
-
-% Constraint on throttle
-maxT=5000;
-mpcobj.ManipulatedVariables(2).Max=maxT; %Max throttle [N*m]
-mpcobj.ManipulatedVariables(3).Max=maxT; %Max throttle [N*m]
-mpcobj.ManipulatedVariables(4).Max=maxT; %Max throttle [N*m]
-mpcobj.ManipulatedVariables(5).Max=maxT; %Max throttle [N*m]
-
-mpcobj.ManipulatedVariables(2).Min=-maxT; %Min throttle (brake) [N*m]
-mpcobj.ManipulatedVariables(3).Min=-maxT; %Min throttle (brake) [N*m]
-mpcobj.ManipulatedVariables(4).Min=-maxT; %Min throttle (brake) [N*m]
-mpcobj.ManipulatedVariables(5).Min=-maxT; %Min throttle (brake) [N*m]
-
-%TODO scale MV
-mpcobj.ManipulatedVariables(2).ScaleFactor=2; %Scale throttle
-mpcobj.ManipulatedVariables(3).ScaleFactor=2; %Scale throttle
-mpcobj.ManipulatedVariables(4).ScaleFactor=2; %Scale throttle
-mpcobj.ManipulatedVariables(5).ScaleFactor=2; %Scale throttle
-mpcobj.OV(3).ScaleFactor=1e10;
-% mpcobj.OV(5).ScaleFactor=1e6;
-% mpcobj.OV(3).Min=-lanewidth*lanes/2;
-% mpcobj.OV(3).Max=lanewidth*lanes/2;
-
 mpcobj.ManipulatedVariables(1).ScaleFactor=0.2; %Scale steering angle
 %% ;
 

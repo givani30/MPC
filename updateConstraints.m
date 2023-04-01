@@ -1,10 +1,10 @@
-function [E,F,G] = updateConstraints(eps,obstacle,detection,lanewidth,lanes)
+function [E,F,G,constraintSlope,constraintIntercept] = updateConstraints(eps,obstacle,detection,lanewidth,lanes)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
     % Extract relevant states
-    Y = eps(5); % The position of the car in the y direction
-    X = eps(6); % The position of the car in the x direction
+    Y = eps(2); % The position of the car in the y direction
+    X = eps(1); % The position of the car in the x direction
 
 % if not(detection)
 %     [E,F,G]=baseConstraints(lanewidth,lanes);
@@ -37,7 +37,7 @@ if detection
         Slope=(obstacle.rlSafeY-Y)/(obstacle.rlSafeX-X);
         constraintSlope=tan(atan2(Slope,1));
         constraintIntercept=obstacle.rlSafeY - constraintSlope*obstacle.rlSafeX;
-    elseif (X>obstacle.rlSafeX)&&(X<=obstacle.flX) 
+    elseif (X>obstacle.rlSafeX)&&(X<=obstacle.flSafeX) 
         constraintSlope=0;
         constraintIntercept=obstacle.rlSafeY;
     else
@@ -53,6 +53,6 @@ else
 end
  [E,F,G]=baseConstraints(lanes,lanes);
    %Update third row of F and G
-   F(3,:)=[0 0 -1 constraintSlope];
+   F(3,:)=[constraintSlope -1 0 0 ];
    G(3)=-1*constraintIntercept;
 %return constraints
