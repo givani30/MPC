@@ -149,7 +149,12 @@ yline(lanewidth*lanes/2,'r')
 ylabel('Y')
 xlabel('X') 
 title('Position')
-
+for i=1:length(slopes)
+    X=[0;50;100];
+    Y=slopes(i)*X+intercepts(i);
+    line(X,Y,'LineStyle','--','Color','g')
+end
+ylim([-6 6])
 hold off
 %%
 figure
