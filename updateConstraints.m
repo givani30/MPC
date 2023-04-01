@@ -37,9 +37,12 @@ if detection
         Slope=(obstacle.rlSafeY-Y)/(obstacle.rlSafeX-X);
         constraintSlope=tan(atan2(Slope,1));
         constraintIntercept=obstacle.rlSafeY - constraintSlope*obstacle.rlSafeX;
-    elseif (X>obstacle.rlSafeX)&&(X<=obstacle.flX) 
-        constraintSlope=0;
-        constraintIntercept=obstacle.rlSafeY;
+    elseif (X>obstacle.rlSafeX)&&(X<=obstacle.flX)
+        Slope=(obstacle.flSafeY-Y)/(obstacle.flSafeX-X);
+        constraintSlope=tan(atan2(Slope,1));
+        constraintIntercept=obstacle.flSafeY-constraintSlope*obstacle.flSafeX;
+%         constraintSlope=0;
+%         constraintIntercept=obstacle.rlSafeY;
     else
         constraintSlope =0;
         constraintIntercept=-lanewidth*lanes/2;

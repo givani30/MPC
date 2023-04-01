@@ -85,10 +85,16 @@ detected=zeros(1,length(T));
 slopes=zeros(1,length(T));
 intercepts=zeros(1,length(T));
 % Simulate the system
-review(mpcobj)
+period=1;
+refsine=@(x) lanewidth*sin(x/V);
+plot(T,refsine(T))
+A_ts=zeros(4,4,length(T));
+
+% review(mpcobj)
 for i=1:length(T)
     %Update plant states
     [newsys,U,Y,X,DX]=(discreteSS(x,u,parameters,Ts));
+    A_ts(:,:,i)=newsys.A;
     %Detection logic
 %     if ObstacleDetected(x,obstacle):
 %         [E,F,G]=updateConstraints(x,obstacle);
@@ -102,13 +108,14 @@ for i=1:length(T)
     measurements=newsys.C*x+newsys.D*u;
     opt=mpcmoveopt;
     %ADD updated constraints here
-    detect=ObstacleDetect(x,obstacle);
-    detected(i)=detect;
-%     detect=false;
+%     detect=ObstacleDetect(x,obstacle);
+%     detected(i)=detect;
+    detect=false;
     [E,F,G,slopes(i),intercepts(i)]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
     opt.CustomConstraint=struct('E',E,'F',F,'G',G);
 %Update ref speed
-    refSpeed=[0;0; 0; V];
+%     refSpeed=[0;0; 0; V];
+    refSpeed=[0 refsine(x(1)) 0 V];
     %Get the optimal control action
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
     %Time update of the system
@@ -130,6 +137,13 @@ end
 % end
 %% 
 % Plot results
+eigA=zeros(4,length(T));
+for k=1:length(T)
+    eigA(:,k)=eig(A_ts(:,:,k));
+end
+figure
+plot(T,eigA)
+
 figure
 hold on
 plot(states(1,:),states(2,:))
@@ -139,8 +153,8 @@ plot(states(1,:),states(2,:))
 % 
 % % Plot obstacle
 % rectangle('Faces', [1 2 3 4], 'Vertices', obstacle_vertices, 'FaceColor', 'red')
-rectangle(Position=[obstacle.rrX,obstacle.rrY,obstacle.Length,obstacle.Width])
-rectangle('Position',[obstacle.rrSafeX,obstacle.rrSafeY,obstacle.Length+2*obstacle.safeDistanceX,obstacle.Width+2*obstacle.safeDistanceY],'LineStyle','--')
+% rectangle(Position=[obstacle.rrX,obstacle.rrY,obstacle.Length,obstacle.Width])
+% rectangle('Position',[obstacle.rrSafeX,obstacle.rrSafeY,obstacle.Length+2*obstacle.safeDistanceX,obstacle.Width+2*obstacle.safeDistanceY],'LineStyle','--')
 yline(lanewidth/2,'b--')
 yline(-lanewidth/2,'b--')
 yline(-lanewidth*lanes/2,'r')
@@ -149,11 +163,7 @@ yline(lanewidth*lanes/2,'r')
 ylabel('Y')
 xlabel('X') 
 title('Position')
-for i=1:length(slopes)
-    X=[0;50;100];
-    Y=slopes(i)*X+intercepts(i);
-    line(X,Y,'LineStyle','--','Color','g')
-end
+plot(states(1,:),refsine(states(1,:)))
 ylim([-6 6])
 hold off
 %%
