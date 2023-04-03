@@ -94,28 +94,20 @@ A_ts=zeros(4,4,length(T));
 for i=1:length(T)
     %Update plant states
     [newsys,U,Y,X,DX]=(discreteSS(x,u,parameters,Ts));
-    A_ts(i)=newsys.A;
-    %Detection logic
-%     if ObstacleDetected(x,obstacle):
-%         [E,F,G]=updateConstraints(x,obstacle);
-%     else:
-%         [E,F,G]=baseConstraints()
-%     end
-        
+    A_ts(:,:,i)=newsys.A;
     %Update constraints
     %Update nominal operating point
     newNominal=struct('X',X,'U',U,'DX',DX,'Y',Y);
     measurements=newsys.C*x+newsys.D*u;
     opt=mpcmoveopt;
-    %ADD updated constraints here
-%     detect=ObstacleDetect(x,obstacle);
-%     detected(i)=detect;
-    detect=false;
-    [E,F,G,slopes(i),intercepts(i)]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
-    opt.CustomConstraint=struct('E',E,'F',F,'G',G);
-%Update ref speed
-%     refSpeed=[0;0; 0; V];
-    refSpeed=[0 refsine(x(1)) 0 V];
+    %Detection logic
+    detect=ObstacleDetect(x,obstacle);
+    detected(i)=detect;
+%     detect=false;
+    %Update ref using constraints
+%     Y_target=refsine(x(1)); Uncomment for sine reference
+    refSpeed=[0 Y_target 0 V];
+
     %Get the optimal control action
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
     %Time update of the system
@@ -124,17 +116,6 @@ for i=1:length(T)
     states(:,i)=x;
     inputs(:,i)=u;
 end
-% % %Simulate the system
-% for i=1:length(T)
-%     
-%     %Get the optimal control action
-%     [u]=mpcmove(mpcobj,egostates,[],refSpeed);
-%     %Simulate the system
-% 
-%     %Save the results
-%     states(:,i)=x;
-%     inputs(:,i)=u;
-% end
 %% 
 % Plot results
 figure

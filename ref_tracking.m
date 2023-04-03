@@ -10,12 +10,6 @@ b=1.5; %m, distance from the center of mass to the rear axle
 c=1; % The distance from the center of mass to the left/right side of the tires (y axis)
 parameters=[m;I;a;b;c];
 %% 
-% Define x0 equilibrium of with speed of 50 km/h$$\xi =\left\lbrack \begin{array}{cccccc}\dot{x} 
-% & \dot{y} & \dot{\psi} & \psi & Y & X\end{array}\right\rbrack =\left\lbrack 
-% \begin{array}{cccccc}\frac{50}{3\ldotp 6} & 0 & 0 & 0 & 0 & 0\end{array}\right\rbrack$$
-% 
-% $$u=\left\lbrack \begin{array}{ccccc}\delta  & F_{f,l}  & F_{f,r}  & F_{r,l}  
-% & F_{r,r} \end{array}\right\rbrack$$
 V=20;
 eps_0=[0;0;0;V];
 lanewidth=3.5;
@@ -60,6 +54,7 @@ mpcobj.Model.Nominal.Y=Y;
 
 %Create obstacle
 obstacle=createObstacle();
+obstacle=ObstacleGeometry(obstacle);
 [E,F,G]=baseConstraints(lanewidth,lanes);
 setconstraint(mpcobj, E,F,G,[1;1;0.1]);
 
@@ -87,35 +82,27 @@ intercepts=zeros(1,length(T));
 % Simulate the system
 period=1;
 refsine=@(x) lanewidth*sin(x/V);
-plot(T,refsine(T))
-A_ts=zeros(4,4,length(T));
 
-% review(mpcobj)
+A_ts=zeros(4,4,length(T));
 for i=1:length(T)
     %Update plant states
     [newsys,U,Y,X,DX]=(discreteSS(x,u,parameters,Ts));
     A_ts(:,:,i)=newsys.A;
-    %Detection logic
-%     if ObstacleDetected(x,obstacle):
-%         [E,F,G]=updateConstraints(x,obstacle);
-%     else:
-%         [E,F,G]=baseConstraints()
-%     end
-        
     %Update constraints
     %Update nominal operating point
     newNominal=struct('X',X,'U',U,'DX',DX,'Y',Y);
     measurements=newsys.C*x+newsys.D*u;
     opt=mpcmoveopt;
-    %ADD updated constraints here
-%     detect=ObstacleDetect(x,obstacle);
-%     detected(i)=detect;
-    detect=false;
-    [E,F,G,slopes(i),intercepts(i)]=updateConstraints(x,obstacle,detect,lanewidth,lanes);
-    opt.CustomConstraint=struct('E',E,'F',F,'G',G);
-%Update ref speed
-%     refSpeed=[0;0; 0; V];
-    refSpeed=[0 refsine(x(1)) 0 V];
+    %Detection logic
+    detect=ObstacleDetect(x,obstacle);
+    detected(i)=detect;
+    %     detect=false;
+    %Update ref using constraints
+    Y_target=refsine(x(1)); 
+    % Uncomment for sine reference
+    %FUNCTION for y target here
+    refSpeed=[0 Y_target 0 V];
+
     %Get the optimal control action
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
     %Time update of the system
@@ -124,37 +111,16 @@ for i=1:length(T)
     states(:,i)=x;
     inputs(:,i)=u;
 end
-% % %Simulate the system
-% for i=1:length(T)
-%     
-%     %Get the optimal control action
-%     [u]=mpcmove(mpcobj,egostates,[],refSpeed);
-%     %Simulate the system
-% 
-%     %Save the results
-%     states(:,i)=x;
-%     inputs(:,i)=u;
-% end
 %% 
 % Plot results
-eigA=zeros(4,length(T));
-for k=1:length(T)
-    eigA(:,k)=eig(A_ts(:,:,k));
-end
-figure
-plot(T,eigA)
-
 figure
 hold on
 plot(states(1,:),states(2,:))
-% 
-% % Define obstacle vertices
-% obstacle_vertices = [obstacle.fl; obstacle.fr; obstacle.rr; obstacle.rl];
-% 
-% % Plot obstacle
-% rectangle('Faces', [1 2 3 4], 'Vertices', obstacle_vertices, 'FaceColor', 'red')
-% rectangle(Position=[obstacle.rrX,obstacle.rrY,obstacle.Length,obstacle.Width])
-% rectangle('Position',[obstacle.rrSafeX,obstacle.rrSafeY,obstacle.Length+2*obstacle.safeDistanceX,obstacle.Width+2*obstacle.safeDistanceY],'LineStyle','--')
+plot(states(1,:),refsine(states(1,:)))
+legend(['Car path','Reference'])
+% Plot obstacle
+rectangle(Position=[obstacle.rrX,obstacle.rrY,obstacle.Length,obstacle.Width])
+rectangle('Position',[obstacle.rrSafeX,obstacle.rrSafeY,obstacle.Length+2*obstacle.safeDistanceX,obstacle.Width+2*obstacle.safeDistanceY],'LineStyle','--')
 yline(lanewidth/2,'b--')
 yline(-lanewidth/2,'b--')
 yline(-lanewidth*lanes/2,'r')
@@ -163,46 +129,44 @@ yline(lanewidth*lanes/2,'r')
 ylabel('Y')
 xlabel('X') 
 title('Position')
-plot(states(1,:),refsine(states(1,:)))
+
 ylim([-6 6])
 hold off
 %%
 figure
-subplot(2,1,1)
-plot(T,states(1,:))
-ylabel('y__dot')
-subplot(2,1,2)
-plot(T,states(2,:))
-ylabel('x__dot')
+subplot(4,1,1)
+plot(T,states(3,:))
+ylabel('\psi')
+subplot(4,1,2)
+plot(T,states(4,:))
+ylabel('V')
 xlabel('Time (s)')
 %% 
 % Plot input
-
-figure
-subplot(2,1,1)
+subplot(4,1,3)
 plot(T,inputs(1,:))
 ylabel('\delta')
-subplot(2,1,2)
+subplot(4,1,4)
 plot(T,inputs(2,:))
-ylabel('F_{f,l}')
+ylabel('F')
 xlabel('Time (s)')
-
-
-figure
-tiledlayout(4,1);
-nexttile
-plot(T,states(1,:))
-legend('X')
-xlabel('Time (s)')
-nexttile
-plot(T,states(2,:))
-legend('Y')
-xlabel('Time (s)')
-nexttile
-plot(T,states(3,:))
-legend('psi')
-xlabel('Time (s)')
-nexttile
-plot(T,states(4,:))
-legend('v')
-xlabel('Time (s)')
+% 
+% 
+% figure
+% tiledlayout(4,1);
+% nexttile
+% plot(T,states(1,:))
+% legend('X')
+% xlabel('Time (s)')
+% nexttile
+% plot(T,states(2,:))
+% legend('Y')
+% xlabel('Time (s)')
+% nexttile
+% plot(T,states(3,:))
+% legend('psi')
+% xlabel('Time (s)')
+% nexttile
+% plot(T,states(4,:))
+% legend('v')
+% xlabel('Time (s)')

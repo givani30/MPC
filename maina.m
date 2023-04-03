@@ -60,6 +60,7 @@ mpcobj.Model.Nominal.Y=Y;
 
 %Create obstacle
 obstacle=createObstacle();
+obstacle=ObstacleGeometry(obstacle);
 [E,F,G]=baseConstraints(lanewidth,lanes);
 setconstraint(mpcobj, E,F,G,[1;1;0.1]);
 
@@ -160,7 +161,7 @@ hold off
 figure
 subplot(2,1,1)
 plot(T,states(1,:))
-ylabel('y__dot')
+ylabel('\dot(y)')
 subplot(2,1,2)
 plot(T,states(2,:))
 ylabel('x__dot')
