@@ -10,7 +10,7 @@ b=1.5; %m, distance from the center of mass to the rear axle
 c=1; % The distance from the center of mass to the left/right side of the tires (y axis)
 parameters=[m;I;a;b;c];
 %% 
-V=20;
+V=40;
 eps_0=[0;0;0;V];
 lanewidth=3.5;
 lanes=3;
@@ -34,15 +34,15 @@ mpcobj.ControlHorizon=2; %0.1 Sec
 % angle,)
 mpcobj.ManipulatedVariables(2).RateMin = -0.2*Ts;
 mpcobj.ManipulatedVariables(2).RateMax = 0.2*Ts;
-mpcobj.ManipulatedVariables(1).RateMin = -pi/30*Ts;
-mpcobj.ManipulatedVariables(1).RateMax = pi/30*Ts;
+mpcobj.ManipulatedVariables(1).RateMin = -pi/10*Ts;
+mpcobj.ManipulatedVariables(1).RateMax = pi/10*Ts;
 
 mpcobj.ManipulatedVariables(1).ScaleFactor = 0.2;
 mpcobj.ManipulatedVariables(2).ScaleFactor = 2;
 %% ;
 
 % # Weights on output vars
-mpcobj.Weights.OutputVariables=[0 30 0 1]; %Weight on x_dot,y_dot,psi and y
+% mpcobj.Weights.OutputVariables=[0 30 0 1]; %Weight on x_dot,y_dot,psi and y
 % # Nominal operating point
 mpcobj.Model.Nominal.X=X;
 mpcobj.Model.Nominal.U=U;
@@ -76,38 +76,48 @@ T=0:Ts:10;
 %Vars to store simulation data
 states=zeros(length(x),length(T));
 inputs=zeros(length(u),length(T));
+controllability = zeros(1,length(T));
 detected=zeros(1,length(T));
 slopes=zeros(1,length(T));
 intercepts=zeros(1,length(T));
 % Simulate the system
 period=1;
 refsine=@(x) lanewidth*sin(x/V);
-
+opt=mpcmoveopt;
 A_ts=zeros(4,4,length(T));
+B_ts=zeros(4,2,length(T));
+review(mpcobj)
 for i=1:length(T)
     %Update plant states
     [newsys,U,Y,X,DX]=(discreteSS(x,u,parameters,Ts));
     A_ts(:,:,i)=newsys.A;
+    B_ts(:,:,i)=newsys.B;
+
     %Update constraints
     %Update nominal operating point
     newNominal=struct('X',X,'U',U,'DX',DX,'Y',Y);
     measurements=newsys.C*x+newsys.D*u;
-    opt=mpcmoveopt;
+
     %Detection logic
     detect=ObstacleDetect(x,obstacle);
     detected(i)=detect;
     %     detect=false;
-    %Update ref using constraints
-    Y_target=refsine(x(1)); 
+    %Update ref using constraint
     % Uncomment for sine reference
     %FUNCTION for y target here
-    refSpeed=[0 Y_target 0 V];
+
+    [refY,WeightY] = ReferenceUpdate(x,obstacle,detect,lanewidth);
+    opt.OutputWeights=[0 WeightY 0 1];
+    refSpeed=[0 refY 0 V];
 
     %Get the optimal control action
     [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
     %Time update of the system
     x=egostates.Plant;
     %Save the results
+%     K = [B_ts(i), A_ts(i)*B_ts(i), A_ts(i)^2*B_ts(i),A_ts(i)^3*B_ts(i)];
+%     controllability(:,i) = rank(K);
+    controllability(:,i)=rank(ctrb(A_ts(:,:,i),B_ts(:,:,i)));
     states(:,i)=x;
     inputs(:,i)=u;
 end
@@ -152,21 +162,7 @@ ylabel('F')
 xlabel('Time (s)')
 % 
 % 
-% figure
-% tiledlayout(4,1);
-% nexttile
-% plot(T,states(1,:))
-% legend('X')
-% xlabel('Time (s)')
-% nexttile
-% plot(T,states(2,:))
-% legend('Y')
-% xlabel('Time (s)')
-% nexttile
-% plot(T,states(3,:))
-% legend('psi')
-% xlabel('Time (s)')
-% nexttile
-% plot(T,states(4,:))
-% legend('v')
-% xlabel('Time (s)')
+figure
+plot(T,controllability(1,:));
+ylabel('rank of kalman matrix');
+xlabel('time');

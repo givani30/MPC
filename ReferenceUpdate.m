@@ -1,9 +1,10 @@
-function [refY] = ReferenceUpdate(eps,obstacle,detection)
+function [refY,WeightY] = ReferenceUpdate(eps,obstacle,detection,lanewidth)
 X = eps(1);
-Y = eps(2);
-if detection
-    if X<=obstacle.flSafeX
-        refY = obstacle.rlSafeY+0.1*obstacle.rlSafeY;
-    else 
-        refY = 0 ;      
+    if detection && X<=obstacle.flSafeX
+        refY = 2*obstacle.rlSafeY;
+        WeightY = 150;
+    else
+        refY=0;
+        WeightY = 30;
+    end
 end
