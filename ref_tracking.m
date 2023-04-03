@@ -107,11 +107,11 @@ for i=1:length(T)
     %FUNCTION for y target here
 
     [refY,WeightY] = ReferenceUpdate(x,obstacle,detect,lanewidth);
-    opt.OutputWeights=[0 WeightY 0 1];
+    opt.OutputWeights=[1 1 0 1];
     refSpeed=[0 refY 0 V];
 
     %Get the optimal control action
-    [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
+    [u,info]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
     %Time update of the system
     x=egostates.Plant;
     %Save the results

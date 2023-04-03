@@ -10,7 +10,7 @@ b=1.5; %m, distance from the center of mass to the rear axle
 c=1; % The distance from the center of mass to the left/right side of the tires (y axis)
 parameters=[m;I;a;b;c];
 %% 
-V=20;
+V=40;
 eps_0=[0;0;0;V];
 lanewidth=3.5;
 lanes=3;
@@ -76,6 +76,7 @@ T=0:Ts:10;
 %Vars to store simulation data
 states=zeros(length(x),length(T));
 inputs=zeros(length(u),length(T));
+controllability = zeros(1,length(T));
 detected=zeros(1,length(T));
 slopes=zeros(1,length(T));
 intercepts=zeros(1,length(T));
@@ -84,7 +85,7 @@ period=1;
 refsine=@(x) lanewidth*sin(x/V);
 opt=mpcmoveopt;
 A_ts=zeros(4,4,length(T));
-B_ts=zeros(4,2,length(t));
+B_ts=zeros(4,2,length(T));
 review(mpcobj)
 for i=1:length(T)
     %Update plant states
@@ -106,15 +107,17 @@ for i=1:length(T)
     %FUNCTION for y target here
 
     [refY,WeightY] = ReferenceUpdate(x,obstacle,detect,lanewidth);
-    opt.OutputWeights=[0 WeightY 0 1];
+    opt.OutputWeights=[1 1 0 1];
     refSpeed=[0 refY 0 V];
 
     %Get the optimal control action
-    [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
+    [u,info]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
     %Time update of the system
     x=egostates.Plant;
     %Save the results
-    K = [B_ts]
+%     K = [B_ts(i), A_ts(i)*B_ts(i), A_ts(i)^2*B_ts(i),A_ts(i)^3*B_ts(i)];
+%     controllability(:,i) = rank(K);
+    controllability(:,i)=rank(ctrb(A_ts(:,:,i),B_ts(:,:,i)));
     states(:,i)=x;
     inputs(:,i)=u;
 end
@@ -159,21 +162,7 @@ ylabel('F')
 xlabel('Time (s)')
 % 
 % 
-% figure
-% tiledlayout(4,1);
-% nexttile
-% plot(T,states(1,:))
-% legend('X')
-% xlabel('Time (s)')
-% nexttile
-% plot(T,states(2,:))
-% legend('Y')
-% xlabel('Time (s)')
-% nexttile
-% plot(T,states(3,:))
-% legend('psi')
-% xlabel('Time (s)')
-% nexttile
-% plot(T,states(4,:))
-% legend('v')
-% xlabel('Time (s)')
+figure
+plot(T,controllability(1,:));
+ylabel('rank of kalman matrix');
+xlabel('time');
