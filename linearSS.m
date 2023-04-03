@@ -1,4 +1,4 @@
-function sys = linearSS(eps, u, params)
+function [A,B,C,D] = linearSS(eps, u, params)
     % This function calculates the continuous LTI model of the system
     % around the equillibrium point eps and u.
     % The system is defined as:
@@ -28,20 +28,15 @@ function sys = linearSS(eps, u, params)
     % sys = linearSS(eps, u, params, Ts);
 
     % Extract states
-    y_dot = eps(1); % The velocity of the car in the y direction
-    x_dot = eps(2); % The velocity of the car in the x direction
-    psi_dot = eps(3); % The angular velocity of the car around the z axis
-    psi = eps(4); % The angle between the body frame and the x axis
-    Y = eps(5); % The position of the car in the y direction
-    X = eps(6); % The position of the car in the x direction
-
+    X = eps(1); % The velocity of the car in the y direction
+    Y = eps(2); % The velocity of the car in the x direction
+    psi = eps(3); % The angular velocity of the car around the z axis
+    V= eps(4); % The angle between the body frame and the x axis
+  
     % Extract inputs
     delta = u(1); % The angle between the body frame and the front axle
-    F_fl = u(2); % The force applied to the front left tire
-    F_fr = u(3); % The force applied to the front right tire
-    F_rl = u(4); % The force applied to the rear left tire
-    F_rr = u(5); % The force applied to the rear right tire
-
+    F = u(2); % The force applied to the front left tire
+   
     % Extract parameters
     g = 9.81; % gravity
     m = params(1); % mass of car
@@ -52,25 +47,23 @@ function sys = linearSS(eps, u, params)
 
     % Calculate linearization matrices
 
-    lin_x = [0, -psi_dot, -x_dot, 0, 0, 0;
-             psi_dot, 0, y_dot, 0, 0, 0;
-             0, 0, 0, 0, 0, 0;
-             0, 0, 1, 0, 0, 0;
-             cos(psi), -sin(psi), 0, x_dot * cos(psi) + y_dot * (-sin(psi)), 0, 0;
-             -sin(psi), cos(psi), 0, x_dot * (-sin(psi)) - y_dot * cos(psi), 0, 0];
+    lin_x = [ 0, 0, -V*sin(psi), cos(psi);
+      0, 0,  V*cos(psi), sin(psi);
+      0, 0, 0,             tan(delta)/(a+b);
+      0, 0, 0,             0];
     A = lin_x;
     
-    lin_u = [-F_fl * sin(delta) - F_fr * cos(delta) sin(delta) sin(delta) 0 0;
-             F_fl * cos(delta) + F_fr * cos(delta) cos(delta) cos(delta) 1 1;
-             (a * ((F_fl + F_fr) * cos(delta)) + c * ((F_fr - F_fl) * -sin(delta))) / I (a * sin(delta) - c * cos(delta)) / I (a * sin(delta) + c * cos(delta)) / I -1 1;
-             0 0 0 0 0;
-             0 0 0 0 0;
-             0 0 0 0 0];
+    lin_u =  [0  , 0;
+     0  , 0;
+     (V*(tan(delta)^2 + 1))/(a+b), 0;
+     0, 0.5];
     B = lin_u;
     %Create ss object to store results
-    C = diag(0, 0, 0, 0, 1, 1); %output y is the position of the car in the reference frame
-    sys = ss(A, B, C, []);
-    sys.InputName = {'delta', 'F_fl', 'F_fr', 'F_rl', 'F_rr'};
-    sys.StateName = {'y_dot', 'x_dot', 'psi_dot', 'psi', 'Y', 'X'};
-    sys.OutputName = {'y_dot', 'x_dot', 'psi_dot', 'psi', 'Y', 'X'};
+    C=eye(4);
+    D = zeros(4,2);
+%     sys = ss(Ac,Bc,C,D);
+%     sys.InputName = {'delta', 'F'};
+%     sys.StateName = {'X', 'Y', 'psi', 'V'};
+%     sys.OutputName = sys.StateName;
+
 end
