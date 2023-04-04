@@ -92,6 +92,7 @@ if any(btilde <= 0)
 end
 % Atilde = [zeros(1, size(A, 2)); bsxfun(@rdivide, A, btilde)];
 Atilde=[zeros(1,size(A,2));A./btilde];
+Atilde=full(Atilde);
 h = convhulln(Atilde, qhullopts);
 u = unique(h(:));
 
