@@ -14,9 +14,9 @@ parameters=[m;I;a;b;c];
 V=5;
 eps_0=[0;
     0;
-    0;
+    0.01;
     V];
-u0=zeros(2,1);
+u0=[0.01;0];
 Ts=1e-2;
 % Define model, cost function, and bounds.
 sys=discreteSS(eps_0,u0,parameters,Ts);
@@ -26,13 +26,13 @@ N = 3;
 
 % alpha = 1e-5;
 Q = diag([0.1 30 0.1 1]);
-R = eye(2);
+R = 0.01*eye(2);
 
 % Bounds.
-xlb = [-10; -10; -10;0];
-xub = [10; 10;10;100];
-ulb = [-inf(); -inf()];
-uub = [inf(); inf()];
+xlb = [-1000; -1000; -100;-10000];
+xub = [1000; 1000;100;10000];
+ulb = [-inf; -pi];
+uub = [inf; pi];
 
 % Find LQR.
 
