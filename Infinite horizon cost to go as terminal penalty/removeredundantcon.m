@@ -90,9 +90,7 @@ btilde = b - A*x0;
 if any(btilde <= 0)
     warning('Shifted b is not strictly positive. convhull will likely fail.')
 end
-% Atilde = [zeros(1, size(A, 2)); bsxfun(@rdivide, A, btilde)];
-Atilde=[zeros(1,size(A,2));A./btilde];
-Atilde=full(Atilde);
+Atilde = [zeros(1, size(A, 2)); bsxfun(@rdivide, A, btilde)];
 h = convhulln(Atilde, qhullopts);
 u = unique(h(:));
 

@@ -19,7 +19,7 @@ Z = struct('G', Az(:,1:Nx), 'H', Az(:,(Nx + 1):end), 'psi', bz);
 switch terminal
 case 'termeq'
     % Equality constraint at the origin.
-    Xf = [0; 0;0;0];
+    Xf = [0; 0];
     
 case 'lqr'
     % Build feasible region considering x \in X and Kx \in U.

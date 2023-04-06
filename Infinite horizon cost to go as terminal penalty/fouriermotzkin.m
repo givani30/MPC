@@ -90,7 +90,6 @@ function [Ae, be] = fmelim(A, b, ielim)
     Ne = length(I0) + length(Ip)*length(Im);
 
     E = [A(:,1:ielim - 1), A(:,ielim + 1:end), b];
-    E=sparse(E);
     Ee = [E(I0,:); kron(c(Ip), E(Im,:)) - kron(E(Ip,:), c(Im))];
 
     Ae = Ee(:,1:end-1);

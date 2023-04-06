@@ -11,30 +11,28 @@ b=1.5; %m, distance from the center of mass to the rear axle
 c=1; % The distance from the center of mass to the left/right side of the tires (y axis)
 parameters=[m;I;a;b;c];
 %% 
-V=5;
+V=20;
 eps_0=[0;
-    0.0;
+    0;
+    0;
     V];
-u0=[0.0;0];
+u0=zeros(2,1);
 Ts=1e-2;
 % Define model, cost function, and bounds.
-sys=simp_discreteSS(eps_0,u0,parameters,Ts);
-
-Ts=1e-2;
-% Define model, cost function, and bounds.
+sys=discreteSS(eps_0,u0,parameters,Ts);
 A = sys.A;
 B = sys.B;
 N = 3;
 
 % alpha = 1e-5;
-Q = diag([30 0.1 1]);
-R = 0.01*eye(2);
+Q = diag([0.1 30 0.1 1]);
+R = eye(2);
 
 % Bounds.
-xlb = [-10; -10;-100];
-xub = [10;10;100];
-ulb = [-100; -100];
-uub=-ulb;
+xlb = [-10; -10; -pi;0];
+xub = [10; 10;pi;100];
+ulb = [-1; -1];
+uub = [1; 1];
 
 % Find LQR.
 
@@ -57,8 +55,8 @@ penalty = struct('Q', Q, 'R', R, 'P', P);
 terminal = Xn.lqr{1}; % LQR terminal set.
 
 Nsim = 25;
-xsim = zeros(3, Nsim + 1);
-xsim(:,1) = [0; 0;5]; % Initial condition.
+xsim = zeros(2, Nsim + 1);
+xsim(:,1) = [0.5; 0.5]; % Initial condition.
 usim = zeros(2, Nsim);
 mpcmats = []; % Calculated first time and then reused.
 for t = 1:Nsim
