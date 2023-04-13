@@ -1,0 +1,11 @@
+function [refY] = ReferenceUpdate(eps,obstacle,detection)
+X = eps(1);
+if detection && X<=
+    if X<=obstacle.flSafeX
+        refY = obstacle.rlSafeY+0.1*obstacle.rlSafeY;
+    else 
+        refY = 0 ;  
+    else+
+    end
+end
+end
