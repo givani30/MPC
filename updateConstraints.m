@@ -3,7 +3,7 @@ function [E,F,G,constraintSlope,constraintIntercept] = updateConstraints(eps,obs
 %   Detailed explanation goes here
 
     % Extract relevant states
-    Y = eps(2); % The position of the car in the y direction
+    Y = eps(2)-0.1; % The position of the car in the y direction
     X = eps(1); % The position of the car in the x direction
 
 % if not(detection)

@@ -85,6 +85,7 @@ inputs=zeros(length(u),length(T));
 detected=zeros(1,length(T));
 slopes=zeros(1,length(T));
 intercepts=zeros(1,length(T));
+costs=zeros(1,length(T));
 % Simulate the system
 review(mpcobj)
 for i=1:length(T)
@@ -111,24 +112,15 @@ for i=1:length(T)
 %Update ref speed
     refSpeed=[0;0; 0; V];
     %Get the optimal control action
-    [u]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
+    [u,info]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
+    costs(i)=info.Cost;
     %Time update of the system
     x=egostates.Plant;
     %Save the results
     states(:,i)=x;
     inputs(:,i)=u;
 end
-% % %Simulate the system
-% for i=1:length(T)
-%     
-%     %Get the optimal control action
-%     [u]=mpcmove(mpcobj,egostates,[],refSpeed);
-%     %Simulate the system
-% 
-%     %Save the results
-%     states(:,i)=x;
-%     inputs(:,i)=u;
-% end
+
 %% 
 % Plot results
 figure
@@ -197,3 +189,8 @@ nexttile
 plot(T,states(4,:))
 legend('v')
 xlabel('Time (s)')
+%% 
+figure
+semilogy(states(1,:),costs)
+% ylim([0 100])
+xlim([0 100])

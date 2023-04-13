@@ -10,8 +10,8 @@ b=1.5; %m, distance from the center of mass to the rear axle
 c=1; % The distance from the center of mass to the left/right side of the tires (y axis)
 parameters=[m;I;a;b;c];
 %% 
-V=40;
-eps_0=[0;0;0;V];
+V=20;
+eps_0=[0;0;0;0.8*V];
 lanewidth=3.5;
 lanes=3;
 %% 
@@ -39,6 +39,7 @@ mpcobj.ManipulatedVariables(1).RateMax = pi/10*Ts;
 
 mpcobj.ManipulatedVariables(1).ScaleFactor = 0.2;
 mpcobj.ManipulatedVariables(2).ScaleFactor = 2;
+mpcobj.OV(2).ScaleFactor=(1/100);
 %% ;
 
 % # Weights on output vars
@@ -51,7 +52,9 @@ mpcobj.Model.Nominal.Y=Y;
 %%
 % # Define the constraints on the output variables
 %Type of constraints: E*u+F*y<=G
-
+% # Weights on output vars
+mpcobj.Weights.OutputVariables=[0 30 0.1 1]; %Weight on x_dot,y_dot,psi and y
+mpcobj.Weights.ManipulatedVariables=[1 1];
 %Create obstacle
 obstacle=createObstacle();
 obstacle=ObstacleGeometry(obstacle);
@@ -80,6 +83,7 @@ controllability = zeros(1,length(T));
 detected=zeros(1,length(T));
 slopes=zeros(1,length(T));
 intercepts=zeros(1,length(T));
+costs=zeros(1,length(T));
 % Simulate the system
 period=1;
 refsine=@(x) lanewidth*sin(x/V);
@@ -107,13 +111,18 @@ for i=1:length(T)
     %FUNCTION for y target here
 
     [refY,WeightY] = ReferenceUpdate(x,obstacle,detect,lanewidth);
-    opt.OutputWeights=[1 1 0 1];
+    % opt.OutputWeights=[0 WeightY 0.1 1];
     refSpeed=[0 refY 0 V];
 
     %Get the optimal control action
+    % e=x-refspeed;
+    % d_e=e_prev-e;
+    % u=kp*e_prop+kd*d_e
+    % e_prev=e
     [u,info]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
     %Time update of the system
     x=egostates.Plant;
+    costs(i)=info.Cost;
     %Save the results
 %     K = [B_ts(i), A_ts(i)*B_ts(i), A_ts(i)^2*B_ts(i),A_ts(i)^3*B_ts(i)];
 %     controllability(:,i) = rank(K);
@@ -126,7 +135,7 @@ end
 figure
 hold on
 plot(states(1,:),states(2,:))
-plot(states(1,:),refsine(states(1,:)))
+% plot(states(1,:),refsine(states(1,:)))
 legend(['Car path','Reference'])
 % Plot obstacle
 rectangle(Position=[obstacle.rrX,obstacle.rrY,obstacle.Length,obstacle.Width])
@@ -166,3 +175,8 @@ figure
 plot(T,controllability(1,:));
 ylabel('rank of kalman matrix');
 xlabel('time');
+%% 
+figure
+semilogy(states(1,:),costs)
+% ylim([0 100])
+% xlim([0 100])

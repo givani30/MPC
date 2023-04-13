@@ -4,7 +4,7 @@ Y = eps(2);
 absolute_distance = sqrt(abs(Y)^2 + abs(obstacle.X-X)^2); %obsolute distance to the obstacle
 distance_X = obstacle.X-X; %distance to the obstacle from center of car in X direction
 distance_Y = abs(obstacle.Y - Y); %distance to the obstacle from center of car in Y direction
-detected = ((absolute_distance <= obstacle.DetectionDistance) && (distance_Y < 4*obstacle.safeDistanceY) && (distance_X>= -3*obstacle.safeDistanceX)) ;
+detected = ((absolute_distance <= obstacle.DetectionDistance)) ;
 end
 %Detection zone car -> in front of car 
 %Express car location in car coordinates/body fixed frame
