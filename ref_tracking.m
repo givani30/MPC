@@ -91,6 +91,7 @@ opt=mpcmoveopt;
 A_ts=zeros(4,4,length(T));
 B_ts=zeros(4,2,length(T));
 review(mpcobj)
+e_prev =[0;0;0;0];
 for i=1:length(T)
     %Update plant states
     [newsys,U,Y,X,DX]=(discreteSS(x,u,parameters,Ts));
@@ -105,7 +106,7 @@ for i=1:length(T)
     %Detection logic
     detect=ObstacleDetect(x,obstacle);
     detected(i)=detect;
-    %     detect=false;
+%         detect=false;
     %Update ref using constraint
     % Uncomment for sine reference
     %FUNCTION for y target here
@@ -113,22 +114,27 @@ for i=1:length(T)
     [refY,WeightY] = ReferenceUpdate(x,obstacle,detect,lanewidth);
     % opt.OutputWeights=[0 WeightY 0.1 1];
     refSpeed=[0 refY 0 V];
-
+    kp = 0.5.*[0,1,10,0;
+        0,0,0,1] ;
+    kd = 1/50.*[0,1000,10,0;
+        0,0,0,100] ;  
     %Get the optimal control action
-    % e=x-refspeed;
-    % d_e=e_prev-e;
-    % u=kp*e_prop+kd*d_e
-    % e_prev=e
-    [u,info]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
+    e_prop=x-refSpeed';
+    d_e=e_prev-e_prop;
+    u=kp*e_prop+kd*d_e;
+    e_prev=e_prop;
+    x_new = newsys.A*x + newsys.B*u;
+    x = x_new;
+%     [u,info]=mpcmoveAdaptive(mpcobj, egostates, newsys, newNominal, measurements, refSpeed, [],opt);
     %Time update of the system
-    x=egostates.Plant;
-    costs(i)=info.Cost;
+%     x=egostates.Plant;
+%     costs(i)=info.Cost;
     %Save the results
 %     K = [B_ts(i), A_ts(i)*B_ts(i), A_ts(i)^2*B_ts(i),A_ts(i)^3*B_ts(i)];
 %     controllability(:,i) = rank(K);
-    controllability(:,i)=rank(ctrb(A_ts(:,:,i),B_ts(:,:,i)));
-    states(:,i)=x;
-    inputs(:,i)=u;
+%     controllability(:,i)=rank(ctrb(A_ts(:,:,i),B_ts(:,:,i)));
+       states(:,i)=x;
+%     inputs(:,i)=u;
 end
 %% 
 % Plot results
@@ -149,7 +155,7 @@ ylabel('Y')
 xlabel('X') 
 title('Position')
 
-ylim([-6 6])
+% ylim([-6 6])
 hold off
 %%
 figure
