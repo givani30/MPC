@@ -11,7 +11,7 @@ c=1; % The distance from the center of mass to the left/right side of the tires 
 parameters=[m;I;a;b;c];
 %% 
 V=20;
-eps_0=[0;0;0;0.8*V];
+eps_0=[0;0;0;0.9*V];
 lanewidth=3.5;
 lanes=3;
 %% 

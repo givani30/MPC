@@ -17,7 +17,7 @@ parameters=[m;I;a;b;c];
 % $$u=\left\lbrack \begin{array}{ccccc}\delta  & F_{f,l}  & F_{f,r}  & F_{r,l}  
 % & F_{r,r} \end{array}\right\rbrack$$
 V=20;
-eps_0=[0;0;0;V];
+eps_0=[0;0;0;0.9*V];
 lanewidth=3.5;
 lanes=3;
 %% 
@@ -48,7 +48,8 @@ mpcobj.ManipulatedVariables(2).ScaleFactor = 2;
 %% ;
 
 % # Weights on output vars
-mpcobj.Weights.OutputVariables=[0 30 0 1]; %Weight on x_dot,y_dot,psi and y
+mpcobj.Weights.OutputVariables=[0 30 0.1 1]; %Weight on x_dot,y_dot,psi and y
+mpcobj.Weights.ManipulatedVariables=[1 1];
 % # Nominal operating point
 mpcobj.Model.Nominal.X=X;
 mpcobj.Model.Nominal.U=U;
@@ -143,11 +144,12 @@ ylabel('Y')
 xlabel('X') 
 title('Position')
 for i=1:length(slopes)
-    X=[0;50;100];
+    X=[0;50;200];
     Y=slopes(i)*X+intercepts(i);
     line(X,Y,'LineStyle','--','Color','g')
 end
 ylim([-6 6])
+xlim([0 200])
 hold off
 %%
 figure
